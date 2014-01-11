@@ -6,13 +6,36 @@
 //  Copyright (c) 2014 Adeola Bannis. All rights reserved.
 //
 
-#include "ExampleNetwork.h"
+#include "BasicNN.h"
 #include <algorithm>
 #include <sstream>
 #include <cmath>
 
+std::string activationFuncName(ActivationFunc f)
+{
+  //  std::ostringstream name;
+    std::string name;
+    switch (f) {
+        case ABS_SIG_FUNC:
+            name = "|x| SIGMOID";
+            break;
+        case GAUSSIAN_FUNC:
+            name = "GAUSSIAN";
+            break;
+        case TANH_FUNC:
+            name = "TANH";
+            break;
+        case STEP_FUNC:
+            name = "THRESHOLD";
+            break;
+        default:
+            break;
+    }
+   // return name.str();
+    return name;
+}
 
-ExampleNetwork::ExampleNetwork(int nInputs, int nOutputs)
+BasicNN::BasicNN(int nInputs, int nOutputs)
 {
     for (int i=0; i<nInputs; i++) {
         nodes.push_back(Node());
@@ -36,7 +59,7 @@ ExampleNetwork::ExampleNetwork(int nInputs, int nOutputs)
     
 }
 
-void ExampleNetwork::addGeneFromParentSystem(ExampleNetwork parent, Edge gene)
+void BasicNN::addGeneFromParentSystem(BasicNN parent, Edge gene)
 {
     if (gene.nodeFrom < 0 || gene.nodeTo < 0)
         return; // invalid
@@ -50,9 +73,11 @@ void ExampleNetwork::addGeneFromParentSystem(ExampleNetwork parent, Edge gene)
         found->disabled = gene.disabled;
     } else {
         while (gene.nodeFrom >= nodes.size() || gene.nodeTo >= nodes.size()) {
-            // add nodes up to the required number
+            // add nodes up to the required number, copying from the parent
             // hope that we don't have floating nodes...
-            nodes.push_back(Node());
+            Node newNode = Node(parent.nodes[nodes.size()]);
+            newNode.indegree = newNode.outdegree = 0;
+            nodes.push_back(newNode);
         }
         edges.push_back(gene);
     }
@@ -67,14 +92,14 @@ static bool compareInnovationNumbers(const Edge &e1, const Edge &e2)
     return e1.innovationNumber < e2.innovationNumber;
 }
 
-std::vector<Edge> ExampleNetwork::connectionGenome()
+std::vector<Edge> BasicNN::connectionGenome()
 {
     std::vector<Edge> genome = std::vector<Edge>(edges);
     std::sort(genome.begin(), genome.end(), compareInnovationNumbers);
     return genome;
 }
 
-void ExampleNetwork::mutateConnectionWeight()
+void BasicNN::mutateConnectionWeight()
 {
     // pick a random edge (disabled is fine?) and mutate its weight
     double var = ((double)rand()/RAND_MAX - 0.5)*2;
@@ -85,18 +110,17 @@ void ExampleNetwork::mutateConnectionWeight()
     toMutate.weight = var;
 }
 
-void ExampleNetwork::mutateNode(long n)
+void BasicNN::mutateNode(long n)
 {
     double var = ((double)rand()/RAND_MAX - 0.5)*2;
     nodes[n].bias = var;
     
-    // should I just change the func?
     ActivationFunc t = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
     nodes[n].type = t;
 }
 
 
-std::pair<Edge, Edge> ExampleNetwork::insertNode()
+std::pair<Edge, Edge> BasicNN::insertNode()
 {
     // pick an existing, enabled edge at random: split it and insert the node there
     uint pos;
@@ -109,7 +133,7 @@ std::pair<Edge, Edge> ExampleNetwork::insertNode()
     return insertNodeOnEdge(toSplit);
 }
 
-std::pair<Edge, Edge> ExampleNetwork::insertNodeOnEdge(Edge &e)
+std::pair<Edge, Edge> BasicNN::insertNodeOnEdge(Edge &e)
 {
     uint nextNode = (uint)nodes.size();
     Node newNode = Node();
@@ -128,7 +152,7 @@ std::pair<Edge, Edge> ExampleNetwork::insertNodeOnEdge(Edge &e)
     return std::pair<Edge, Edge>(e1, e2);
 }
 
-Edge ExampleNetwork::createConnection()
+Edge BasicNN::createConnection()
 {
     // pick two existing, unconnected nodes and connect them - can connect self to self!
     int maxConnections = (int)(nodes.size()*nodes.size());
@@ -189,7 +213,7 @@ Edge ExampleNetwork::createConnection()
     return newEdge;
 }
 
-void ExampleNetwork::updateInnovationNumber(const Edge &info)
+void BasicNN::updateInnovationNumber(const Edge &info)
 {
     //find the edge and update it
     std::vector<Edge>::iterator it = std::find(edges.begin(), edges.end(), info);
@@ -200,13 +224,15 @@ void ExampleNetwork::updateInnovationNumber(const Edge &info)
     
 }
 
-double ExampleNetwork::connectionDifference(const Edge &c1, const Edge &c2)
+double BasicNN::connectionDifference(const Edge &c1, const Edge &c2)
 {
-    return 4.0*fabs(c1.weight - c2.weight);
+    double weightDiff = fabs(c1.weight - c2.weight);
+    
+    return weightDiff;
 }
 
 
-std::string ExampleNetwork::display()
+std::string BasicNN::display()
 {
     // sort the edges by source node and display
     
@@ -221,34 +247,42 @@ std::string ExampleNetwork::display()
         ss << "\n";
     }
     
+    // display the nodes too
+    for (int i=0; i<nodes.size(); i++) {
+        Node n = nodes[i];
+        ss << i << ": " << activationFuncName(n.type);
+        if (n.type == STEP_FUNC)
+            ss << " T: " << n.threshold;
+        ss << " B: " << n.bias << "\n";
+    }
     
     return ss.str();
 }
 
-long ExampleNetwork::numberOfNodes()
+long BasicNN::numberOfNodes()
 {
     return nodes.size();
 }
 
-long ExampleNetwork::numberOfEdges()
+long BasicNN::numberOfEdges()
 {
     return edges.size();
 }
 
-//long ExampleNetwork::numberOfInputNodes()
+//long BasicNN::numberOfInputNodes()
 //{
 //    // all nodes with indegree == 0
 //    return std::count_if(nodes.begin(), nodes.end(), isInput);
 //}
 //
 //static bool isOutput(Node n) { return n.outdegree == 0;}
-//long ExampleNetwork::numberOfOutputNodes()
+//long BasicNN::numberOfOutputNodes()
 //{
 //    return std::count_if(nodes.begin(), nodes.end(), isOutput);
 //}
 
 
-std::pair<std::vector<double>, bool> ExampleNetwork::simulateTillEquilibrium(std::vector<double> inputValues, int maxSteps)
+SimReturn BasicNN::simulateTillEquilibrium(std::vector<double> inputValues, int maxSteps)
 {
     // ensure that we have the right number of input values
     long nNodes = nodes.size();
@@ -256,7 +290,8 @@ std::pair<std::vector<double>, bool> ExampleNetwork::simulateTillEquilibrium(std
     std::vector<double> currentOutputs = std::vector<double>(nNodes);
     
     bool steady = false;
-    for (int steps = 0; steps<maxSteps; steps++) {
+    long steps;
+    for (steps = 0; steps<maxSteps; steps++) {
         std::vector<double> lastOutputs = currentOutputs;
         currentOutputs = nodeOuputsForInputs(inputValues, currentOutputs);
         if (lastOutputs == currentOutputs) {
@@ -271,7 +306,7 @@ std::pair<std::vector<double>, bool> ExampleNetwork::simulateTillEquilibrium(std
         finalOutputs.push_back(currentOutputs[node]);
     }
     
-    return std::pair<std::vector<double>, bool>(finalOutputs, steady);
+    return SimReturn(finalOutputs, steady, steps);
 }
 
 
@@ -304,7 +339,7 @@ static double applyActivationFunc(Node n, double inputSum)
 }
 
 
- std::vector<double> ExampleNetwork::nodeOuputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs)
+ std::vector<double> BasicNN::nodeOuputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs)
 {
     std::vector<double> newOutputs;
     
@@ -341,7 +376,7 @@ private:
     long n;
 };
 
-std::vector<Edge> ExampleNetwork::inputsToNode(long n)
+std::vector<Edge> BasicNN::inputsToNode(long n)
 {
     
     std::vector<Edge> found;

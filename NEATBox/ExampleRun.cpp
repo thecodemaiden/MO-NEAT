@@ -8,29 +8,32 @@
 
 #include "ExampleRun.h"
 
-#include "ExampleNetwork.h"
+#include "BasicNN.h"
 #include "ExampleGoals.h"
 
 #include "NEATAlgorithm.cpp"
-template class NEATAlgorithm<ExampleNetwork,Edge>;
+template class NEATAlgorithm<BasicNN,Edge>;
 
-ExampleNetwork createNetwork()
+BasicNN createNetwork()
 {
-    return ExampleNetwork(2,1);
+    return BasicNN(2,1);
 }
 
 void runExample()
 {
     
-    NEATAlgorithm<ExampleNetwork, Edge> algo(100, 200, 10);
+    NEATAlgorithm<BasicNN, Edge> algo(150, 200, 10);
     algo.evaluationFunc = &xorEvaluation;
     algo.stopFunc = &xorFitnessSatisfied;
     algo.createInitialIndividual = &createNetwork;
     
-    while (!algo.tick());
-    ExampleNetwork *winner = algo.bestIndividual();
-    std::cout << winner->display();
+    algo.w_disjoint = 2.0;
+    algo.w_excess = 3.0;
+    algo.w_matching = 2.0;
     
-   // xorEvaluation(*winner);
+    while (!algo.tick());
+    BasicNN *winner = algo.bestIndividual();
+    std::cout << winner->display();
+    std::cout << "Solution found in " << algo.getNumberOfIterations() << " generations.\n";
     
 }

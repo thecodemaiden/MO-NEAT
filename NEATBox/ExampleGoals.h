@@ -10,13 +10,13 @@
 #define __NEATBox__ExampleGoals__
 
 #include <iostream>
-#include "ExampleNetwork.h"
+#include "BasicNN.h"
 
 
-double dummyEvaluation(ExampleNetwork& individual);
+double dummyEvaluation(BasicNN& individual);
 bool goodEnoughDummyFitness(double bestFitness);
 
-double xorEvaluation(ExampleNetwork& individual);
+double xorEvaluation(BasicNN& individual);
 bool xorFitnessSatisfied(double bestFitness);
 
 #endif /* defined(__NEATBox__ExampleGoals__) */

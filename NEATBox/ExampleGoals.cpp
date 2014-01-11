@@ -7,19 +7,19 @@
 //
 
 #include "ExampleGoals.h"
-#include "ExampleNetwork.h"
+#include "BasicNN.h"
 #include <array>
 #include <cmath>
 
-double dummyEvaluation(ExampleNetwork& individual)
+double dummyEvaluation(BasicNN& individual)
 {
-    std::pair<std::vector<double>, bool> eval =
+    SimReturn eval =
     individual.simulateTillEquilibrium(std::vector<double>(), 10);
     
-    for (long i=0; i<eval.first.size(); i++) {
-        std::cout <<"\t" << i << ": " << eval.first[i] <<"\n";
+    for (long i=0; i<eval.outputs.size(); i++) {
+        std::cout <<"\t" << i << ": " << eval.outputs[i] <<"\n";
     }
-    std::cout << "\tsteady: " << (eval.second ? "y" : "n") << "\n";
+    std::cout << "\tsteady: " << (eval.steady ? "y" : "n") << "\n";
     
     return individual.numberOfEdges();
 }
@@ -29,7 +29,7 @@ bool goodEnoughDummyFitness(double bestFitness)
     return bestFitness >= 15.0;
 }
 
-double xorEvaluation(ExampleNetwork& individual)
+double xorEvaluation(BasicNN& individual)
 {
     std::vector<std::array<double, 2> > inVals;
     
@@ -38,23 +38,31 @@ double xorEvaluation(ExampleNetwork& individual)
     inVals.push_back({1,0});
     inVals.push_back({1,1});
     
+    int maxSteps = 30;
+    
     std::array<double, 4> expectedOutput = {0, 1,1,0};
     std::array<double, 4> actualOutput;
     double diff = 0.0;
     for (int i=0; i<4; i++) {
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
-        std::pair<std::vector<double>, bool> eval =
-        individual.simulateTillEquilibrium(input, 30);
-        actualOutput[i] = eval.first.front();
-        double d = expectedOutput[i] - eval.first.front();
+        SimReturn eval =
+        individual.simulateTillEquilibrium(input, maxSteps);
+        actualOutput[i] = eval.outputs.front();
+        double d = expectedOutput[i] - eval.outputs.front();
         diff += fabs(d);
+        
+        // penalize unstable networks
+        if (!eval.steady)
+            diff += 1.0;
+        
+       // diff += (double)eval.steps/maxSteps;
     }
     
 
-    return (4-diff)*(4-diff);
+    return (9-diff)*(9-diff);
 }
 
 bool xorFitnessSatisfied(double bestFitness)
 {
-    return bestFitness == 16.0;
+    return bestFitness > 80.0;
 }

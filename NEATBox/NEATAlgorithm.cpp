@@ -141,8 +141,6 @@ void NEATAlgorithm <IndividualType, InnovationType>::spawnNextGeneration()
 template <class IndividualType, class InnovationType>
 std::pair<SystemInfo<IndividualType>, SystemInfo<IndividualType> > NEATAlgorithm <IndividualType, InnovationType>::selectParents(double  fitnessSum)
 {
-    
-    
     NEATSpecies<IndividualType> breedingSpecies;
     
     // now if we're stagnant, we only allow the top 2 species to breed (according to the NEAT paper)

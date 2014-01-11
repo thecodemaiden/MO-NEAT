@@ -23,6 +23,8 @@ enum ActivationFunc {
     FUNC_SENTINEL,
 };
 
+std::string activationFuncName(ActivationFunc f);
+
 struct Edge {
     int nodeFrom;
     int nodeTo;
@@ -71,8 +73,15 @@ struct Node {
     Node():type(GAUSSIAN_FUNC), indegree(0), outdegree(0), bias(0){};
 };
 
+struct SimReturn {
+    std::vector<double>outputs;
+    bool steady;
+    long steps;
+    SimReturn(std::vector<double> o, bool steady, long steps):outputs(o), steady(steady), steps(steps){};
+};
 
-class ExampleNetwork
+
+class BasicNN
 {
     std::vector<Node> nodes;
     std::vector<Edge> edges;
@@ -83,9 +92,9 @@ public:
 #pragma mark - Necessary for NEATAlgorithm to work
     static double connectionDifference(const Edge &c1, const Edge &c2);
 
-    ExampleNetwork(int nInputs, int nOutputs);
+    BasicNN(int nInputs, int nOutputs);
     
-    void addGeneFromParentSystem(ExampleNetwork parent, Edge gene);
+    void addGeneFromParentSystem(BasicNN parent, Edge gene);
     std::vector<Edge> connectionGenome();
     void updateInnovationNumber(const Edge &info);
 
@@ -97,7 +106,7 @@ public:
 #pragma mark - End of necessary methods
     // simulate the network for evaluation
     // we can create recurrent networks, and we usually want them to settle
-    std::pair<std::vector<double>, bool> simulateTillEquilibrium(std::vector<double> inputValues, int maxSteps);
+    SimReturn simulateTillEquilibrium(std::vector<double> inputValues, int maxSteps);
     
     std::string display();
     

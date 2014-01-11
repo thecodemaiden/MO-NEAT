@@ -12,7 +12,7 @@
 		E249A5F0187E154D009DFEBA /* NeatBoxTest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */; };
 		E249A5F4187E155D009DFEBA /* NEATBox.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E20CC51B187C445500AAA3DA /* NEATBox.dylib */; };
 		E249A5F5187E5206009DFEBA /* NEATAlgorithm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC52C187C447E00AAA3DA /* NEATAlgorithm.cpp */; };
-		E249A5F71880422E009DFEBA /* ExampleNetwork.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC533187C544100AAA3DA /* ExampleNetwork.cpp */; };
+		E249A5F71880422E009DFEBA /* BasicNN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC533187C544100AAA3DA /* BasicNN.cpp */; };
 		E249A5F818804234009DFEBA /* ExampleGoals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */; };
 		E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */; };
 /* End PBXBuildFile section */
@@ -38,8 +38,8 @@
 		E20CC52C187C447E00AAA3DA /* NEATAlgorithm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NEATAlgorithm.cpp; sourceTree = "<group>"; };
 		E20CC52D187C447E00AAA3DA /* NEATAlgorithm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NEATAlgorithm.h; sourceTree = "<group>"; };
 		E20CC530187C453E00AAA3DA /* NEATTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NEATTypes.h; sourceTree = "<group>"; };
-		E20CC533187C544100AAA3DA /* ExampleNetwork.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ExampleNetwork.cpp; sourceTree = "<group>"; };
-		E20CC534187C544100AAA3DA /* ExampleNetwork.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExampleNetwork.h; sourceTree = "<group>"; };
+		E20CC533187C544100AAA3DA /* BasicNN.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BasicNN.cpp; sourceTree = "<group>"; };
+		E20CC534187C544100AAA3DA /* BasicNN.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BasicNN.h; sourceTree = "<group>"; };
 		E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ExampleGoals.cpp; sourceTree = "<group>"; };
 		E20CC538187C612C00AAA3DA /* ExampleGoals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExampleGoals.h; sourceTree = "<group>"; };
 		E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ExampleRun.cpp; sourceTree = "<group>"; };
@@ -118,8 +118,8 @@
 		E20CC532187C531300AAA3DA /* Example Classes */ = {
 			isa = PBXGroup;
 			children = (
-				E20CC534187C544100AAA3DA /* ExampleNetwork.h */,
-				E20CC533187C544100AAA3DA /* ExampleNetwork.cpp */,
+				E20CC534187C544100AAA3DA /* BasicNN.h */,
+				E20CC533187C544100AAA3DA /* BasicNN.cpp */,
 				E20CC538187C612C00AAA3DA /* ExampleGoals.h */,
 				E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */,
 				E20CC53C187C621B00AAA3DA /* ExampleRun.h */,
@@ -230,7 +230,7 @@
 				E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */,
 				E249A5EE187E154D009DFEBA /* main.cpp in Sources */,
 				E249A5F818804234009DFEBA /* ExampleGoals.cpp in Sources */,
-				E249A5F71880422E009DFEBA /* ExampleNetwork.cpp in Sources */,
+				E249A5F71880422E009DFEBA /* BasicNN.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -365,6 +365,7 @@
 				E249A5F3187E154D009DFEBA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

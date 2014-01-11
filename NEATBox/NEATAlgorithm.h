@@ -43,24 +43,6 @@ protected:
     std::vector<SystemInfo<IndividualType> > population;
     std::vector<NEATSpecies<IndividualType> >speciesList;
 
-    // probability of recombination taking from weaker parent
-    double p_c = 0.3;
-    
-    // mutation probabilities
-    double p_m_node_ins = 0.1; // how likely we are to add a new node
-    double p_m_conn_ins = 0.2;   // how likely we are to add a new connection
-    
-    double p_m_node = 0.3; // how likely we are to mutate each existing node
-    double p_m_conn = 0.3; // how likely are we to mutate each existing connection
-    
-    // threshold distance - a difference bigger than this will exclude an individual from a species
-    
-    double d_threshold = 1.0;
-
-    double w_excess = 0.25;
-    double w_disjoint = 0.25;
-    double w_matching = 0.5;
-
     int populationSize;
     int stagnantGenerations;
     int maxStagnation;
@@ -75,13 +57,11 @@ protected:
 
     void mutateSystem(IndividualType& original); // does not make a copy
 
-#pragma mark - Override these functions in NEAT variants only
     virtual IndividualType combineSystems(IndividualType &sys1, IndividualType &sys2); // assumes the fitter individual is first
     virtual double genomeDistance( IndividualType& sys1,  IndividualType& sys2);
     virtual std::pair<SystemInfo<IndividualType>, SystemInfo<IndividualType> > selectParents(double fitnessSum);
     virtual void assignInnovationNumberToAttachment(IndividualType& individual, InnovationType i);
 
-#pragma mark -
     
     // overriden functions cannot be called in constructors, so this is called on the first tick();
     virtual void prepareInitialPopulation();
@@ -103,6 +83,23 @@ public:
     IndividualType *bestIndividual();
     long getNumberOfIterations();
     
+#pragma mark - Tuning parameters
+    // probability of recombination taking from weaker parent
+    double p_c = 0.3;
+    
+    // mutation probabilities
+    double p_m_node_ins = 0.1; // how likely we are to add a new node
+    double p_m_conn_ins = 0.2;   // how likely we are to add a new connection
+    
+    double p_m_node = 0.3; // how likely we are to mutate each existing node
+    double p_m_conn = 0.3; // how likely are we to mutate each existing connection
+    
+    double d_threshold = 3.0; // threshold distance - a difference bigger than this will exclude an individual from a species
+    
+    double w_excess = 0.25; // how heavily the number of excess genes are weighed
+    double w_disjoint = 0.25; // how heavily the number of disjoint genes are weighed
+    double w_matching = 0.5; // how heavily the total difference between matching genes is weighed
+#pragma mark -
     
 private:
     std::ofstream currentLogFile;
