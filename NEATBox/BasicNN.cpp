@@ -102,7 +102,7 @@ std::vector<Edge> BasicNN::connectionGenome()
 void BasicNN::mutateConnectionWeight()
 {
     // pick a random edge (disabled is fine?) and mutate its weight
-    double var = ((double)rand()/RAND_MAX - 0.5)*2;
+    double var = normallyDistributed();
     
     uint pos = arc4random_uniform((uint)edges.size());
     Edge &toMutate = edges.at(pos);
@@ -112,7 +112,7 @@ void BasicNN::mutateConnectionWeight()
 
 void BasicNN::mutateNode(long n)
 {
-    double var = ((double)rand()/RAND_MAX - 0.5)*2;
+    double var = normallyDistributed();
     nodes[n].bias = var;
     
     ActivationFunc t = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
@@ -231,6 +231,17 @@ double BasicNN::connectionDifference(const Edge &c1, const Edge &c2)
     return weightDiff;
 }
 
+int BasicNN::differingNodes(BasicNN other)
+{
+    long length = std::min(other.nodes.size(), nodes.size());
+    int d = 0;
+    for (long i=0; i<length; i++) {
+        if (other.nodes[i].type != nodes[i].type)
+            d++;
+    }
+    return d;
+}
+
 
 std::string BasicNN::display()
 {
@@ -291,7 +302,7 @@ SimReturn BasicNN::simulateTillEquilibrium(std::vector<double> inputValues, int 
     
     bool steady = false;
     long steps;
-    for (steps = 0; steps<maxSteps; steps++) {
+    for (steps = -1; steps<maxSteps; steps++) {
         std::vector<double> lastOutputs = currentOutputs;
         currentOutputs = nodeOuputsForInputs(inputValues, currentOutputs);
         if (lastOutputs == currentOutputs) {
@@ -328,7 +339,7 @@ static double applyActivationFunc(Node n, double inputSum)
             output = 1.0/(1 + fabs(inputSum));
             break;
         case GAUSSIAN_FUNC:
-            output = exp(-inputSum*inputSum);
+            output = 2*exp(-inputSum*inputSum) - 1;
             break;
         default:
             output = inputSum;

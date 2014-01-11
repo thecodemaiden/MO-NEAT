@@ -19,4 +19,7 @@ bool goodEnoughDummyFitness(double bestFitness);
 double xorEvaluation(BasicNN& individual);
 bool xorFitnessSatisfied(double bestFitness);
 
+double parityEvaluation(BasicNN& individual);
+bool parityFitnessSatisfied(double bestFitness);
+
 #endif /* defined(__NEATBox__ExampleGoals__) */

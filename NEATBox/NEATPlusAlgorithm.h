@@ -1,18 +1,18 @@
 //
-//  NEATAlgorithm.h
+//  NEATPlusAlgorithm.h
 //  SystemGenerator
 //
 //  Created by Adeola Bannis on 11/4/13.
 //
 //
 
-#ifndef __SystemGenerator__NEATAlgorithm__
-#define __SystemGenerator__NEATAlgorithm__
+#ifndef __SystemGenerator__NEATPlusAlgorithm__
+#define __SystemGenerator__NEATPlusAlgorithm__
 
 #include <vector>
 #include <fstream>
-#include "NEATTypes.h"
 
+#include <cmath>
 #include <algorithm>
 #include <numeric>
 #include <sstream>
@@ -37,7 +37,7 @@ public:
 };
 
 template <class IndividualType, class InnovationType>
-class NEATAlgorithm {
+class NEATPlusAlgorithm {
 protected:
     std::vector<InnovationType> newConnections;
     std::vector<SystemInfo<IndividualType> > population;
@@ -68,8 +68,8 @@ protected:
         
     void logPopulationStatistics();
 public:
-    NEATAlgorithm(int populationSize, int maxGenerations, int maxStagnation);
-    ~NEATAlgorithm();
+    NEATPlusAlgorithm(int populationSize, int maxGenerations, int maxStagnation);
+    ~NEATPlusAlgorithm();
     
     // notice that this cannot be overriden.
     bool tick();
@@ -99,6 +99,8 @@ public:
     double w_excess = 0.25; // how heavily the number of excess genes are weighed
     double w_disjoint = 0.25; // how heavily the number of disjoint genes are weighed
     double w_matching = 0.5; // how heavily the total difference between matching genes is weighed
+    
+    double w_matching_node = 0.5; // how heavily we weigh the difference between matching nodes
 #pragma mark -
     
 private:
@@ -110,4 +112,4 @@ private:
 };
 
 
-#endif /* defined(__SystemGenerator__NEATAlgorithm__) */
+#endif /* defined(__SystemGenerator__NEATPlusAlgorithm__) */

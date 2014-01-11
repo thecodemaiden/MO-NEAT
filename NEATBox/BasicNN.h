@@ -13,8 +13,7 @@
 #include <vector>
 #include <string>
 #include <set>
-
-
+#include "NBUtils.h"
 enum ActivationFunc {
     STEP_FUNC,
     TANH_FUNC,
@@ -32,13 +31,14 @@ struct Edge {
     double weight;
     
     int innovationNumber; // needed for NEAT
-    bool disabled;
-        
+    bool disabled;  // for NEAT
+    
+    
     Edge(int from, int to)
     :nodeFrom(from), nodeTo(to), innovationNumber(0),disabled(false)
     {
         // random weight
-        weight = ((double)rand()/RAND_MAX - 0.5)*2;
+        weight = normallyDistributed();
     }
     
     // equality
@@ -69,8 +69,11 @@ struct Node {
     
     double threshold = 0.5;
     double activatedVal = 1.0;
-    double deactivatedVal = 0.0;
-    Node():type(GAUSSIAN_FUNC), indegree(0), outdegree(0), bias(0){};
+    double deactivatedVal = 1.0;
+    Node():indegree(0), outdegree(0), bias(0){
+        type = STEP_FUNC;
+       // type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
+    };
 };
 
 struct SimReturn {
@@ -89,13 +92,16 @@ class BasicNN
     // the internal representation of your graph is up to you
     // this is a weighted directed graph, the standard model of a NN
 public:
-#pragma mark - Necessary for NEATAlgorithm to work
-    static double connectionDifference(const Edge &c1, const Edge &c2);
+#pragma mark - Necessary for NEATPlusAlgorithm to work
+    static double connectionDifference(const Edge &mine, const Edge &other);
 
     BasicNN(int nInputs, int nOutputs);
     
     void addGeneFromParentSystem(BasicNN parent, Edge gene);
     std::vector<Edge> connectionGenome();
+    
+    int differingNodes(BasicNN other);
+    
     void updateInnovationNumber(const Edge &info);
 
     void mutateConnectionWeight();

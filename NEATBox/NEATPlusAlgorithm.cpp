@@ -1,12 +1,12 @@
 //
-//  NEATAlgorithm.cpp
+//  NEATPlusAlgorithm.cpp
 //  SystemGenerator
 //
 //  Created by Adeola Bannis on 11/4/13.
 //
 //
 
-#include "NEATAlgorithm.h"
+#include "NEATPlusAlgorithm.h"
 #include <algorithm>
 #include <numeric>
 #include <sstream>
@@ -15,7 +15,7 @@
 
 
 template <class IndividualType, class InnovationType>
-NEATAlgorithm <IndividualType, InnovationType>::NEATAlgorithm(int populationSize, int maxGenerations, int maxStagnation)
+NEATPlusAlgorithm <IndividualType, InnovationType>::NEATPlusAlgorithm(int populationSize, int maxGenerations, int maxStagnation)
 :populationSize(populationSize), maxStagnation(maxStagnation), maxGenerations(maxGenerations)
 
 {
@@ -29,7 +29,7 @@ NEATAlgorithm <IndividualType, InnovationType>::NEATAlgorithm(int populationSize
 }
 
 template <class IndividualType, class InnovationType>
-NEATAlgorithm <IndividualType, InnovationType>::~NEATAlgorithm()
+NEATPlusAlgorithm <IndividualType, InnovationType>::~NEATPlusAlgorithm()
 {
     //empty the species lists
     typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
@@ -59,7 +59,7 @@ static bool compareInnovationNumbers(const InnovationType a1, const InnovationTy
 }
 
 template <class IndividualType, class InnovationType>
-IndividualType NEATAlgorithm <IndividualType, InnovationType>::combineSystems(IndividualType &sys1, IndividualType &sys2)
+IndividualType NEATPlusAlgorithm <IndividualType, InnovationType>::combineSystems(IndividualType &sys1, IndividualType &sys2)
 {
     
     if (&sys1 == &sys2) {
@@ -108,7 +108,7 @@ IndividualType NEATAlgorithm <IndividualType, InnovationType>::combineSystems(In
 
 //fitness proportionate selection
 template <class IndividualType, class InnovationType>
-void NEATAlgorithm <IndividualType, InnovationType>::spawnNextGeneration()
+void NEATPlusAlgorithm <IndividualType, InnovationType>::spawnNextGeneration()
 {
     double  sharedFitnessSum = 0.0;
     typename std::vector<SystemInfo<IndividualType> >::iterator it = population.begin();
@@ -139,7 +139,7 @@ void NEATAlgorithm <IndividualType, InnovationType>::spawnNextGeneration()
 }
 
 template <class IndividualType, class InnovationType>
-std::pair<SystemInfo<IndividualType>, SystemInfo<IndividualType> > NEATAlgorithm <IndividualType, InnovationType>::selectParents(double  fitnessSum)
+std::pair<SystemInfo<IndividualType>, SystemInfo<IndividualType> > NEATPlusAlgorithm <IndividualType, InnovationType>::selectParents(double  fitnessSum)
 {
     NEATSpecies<IndividualType> breedingSpecies;
     
@@ -191,7 +191,7 @@ std::pair<SystemInfo<IndividualType>, SystemInfo<IndividualType> > NEATAlgorithm
 
 
 template <class IndividualType, class InnovationType>
-void NEATAlgorithm <IndividualType, InnovationType>::speciate()
+void NEATPlusAlgorithm <IndividualType, InnovationType>::speciate()
 {
     typename std::vector<SystemInfo<IndividualType> >::iterator populationIter = population.begin();
     
@@ -254,9 +254,9 @@ void NEATAlgorithm <IndividualType, InnovationType>::speciate()
     }
 }
 
-
+// unlike base NEAT, also take node differences into account
 template <class IndividualType, class InnovationType>
-double  NEATAlgorithm <IndividualType, InnovationType>::genomeDistance( IndividualType& sys1,  IndividualType& sys2)
+double  NEATPlusAlgorithm <IndividualType, InnovationType>::genomeDistance( IndividualType& sys1,  IndividualType& sys2)
 {
     std::vector<InnovationType> genome1 = sys1.connectionGenome();
     std::vector<InnovationType> genome2 = sys2.connectionGenome();
@@ -274,7 +274,6 @@ double  NEATAlgorithm <IndividualType, InnovationType>::genomeDistance( Individu
     std::vector<InnovationType> matchingGenes2;
     std::vector<InnovationType> disjointFromSys1;
     std::vector<InnovationType> disjointFromSys2;
-    
     
     // set intersection takes from the first range given - I do it twice so I have the matches from parent 1 and from parent 2.
     std::set_intersection(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(matchingGenes1), compareInnovationNumbers<InnovationType>);
@@ -335,7 +334,9 @@ double  NEATAlgorithm <IndividualType, InnovationType>::genomeDistance( Individu
     }
     
     
-    double  d = w_disjoint*nDisjoint/longerSize + w_excess*nExcess/longerSize + w_matching*matchingDiff/nMatching;
+    int differenceCount = sys1.differingNodes(sys2);
+    long moreNodes = std::max(sys1.numberOfNodes(), sys2.numberOfNodes());
+    double  d = w_disjoint*nDisjoint/longerSize + w_excess*nExcess/longerSize + w_matching*matchingDiff/nMatching + w_matching_node*(double)differenceCount/moreNodes;
     
     //assert(!isUnreasonable(d));
     return d;
@@ -343,7 +344,7 @@ double  NEATAlgorithm <IndividualType, InnovationType>::genomeDistance( Individu
 
 
 template <class IndividualType, class InnovationType>
-void NEATAlgorithm <IndividualType, InnovationType>::prepareInitialPopulation()
+void NEATPlusAlgorithm <IndividualType, InnovationType>::prepareInitialPopulation()
 {
     // mutate the initial system to get an initial population
     while (population.size() < populationSize) {
@@ -363,7 +364,7 @@ static bool compareSpeciesFitness(const NEATSpecies<IndividualType>& s1, const N
 }
 
 template <class IndividualType, class InnovationType>
-bool NEATAlgorithm <IndividualType, InnovationType>::tick()
+bool NEATPlusAlgorithm <IndividualType, InnovationType>::tick()
 {
     if (population.size() == 0) {
         prepareInitialPopulation();
@@ -471,20 +472,20 @@ bool NEATAlgorithm <IndividualType, InnovationType>::tick()
 }
 
 template <class IndividualType, class InnovationType>
-IndividualType  *NEATAlgorithm <IndividualType, InnovationType>::bestIndividual()
+IndividualType  *NEATPlusAlgorithm <IndividualType, InnovationType>::bestIndividual()
 {
     return _bestIndividual;
 }
 
 template <class IndividualType, class InnovationType>
-long NEATAlgorithm <IndividualType, InnovationType>::getNumberOfIterations()
+long NEATPlusAlgorithm <IndividualType, InnovationType>::getNumberOfIterations()
 {
     return generations;
 }
 
 
 template <class IndividualType, class InnovationType>
-void NEATAlgorithm <IndividualType, InnovationType>::mutateSystem(IndividualType& original)
+void NEATPlusAlgorithm <IndividualType, InnovationType>::mutateSystem(IndividualType& original)
 {
     
     std::vector<InnovationType> allAttachments = original.connectionGenome();
@@ -523,7 +524,7 @@ void NEATAlgorithm <IndividualType, InnovationType>::mutateSystem(IndividualType
 }
 
 template <class IndividualType, class InnovationType>
-void NEATAlgorithm <IndividualType, InnovationType>::assignInnovationNumberToAttachment(IndividualType& individual, InnovationType i){
+void NEATPlusAlgorithm <IndividualType, InnovationType>::assignInnovationNumberToAttachment(IndividualType& individual, InnovationType i){
     // have we already created this 'innovation' in this generation?
     typename std::vector<InnovationType>::iterator it = std::find(newConnections.begin(), newConnections.end(), i);
     if (it!= newConnections.end()) {
@@ -536,7 +537,7 @@ void NEATAlgorithm <IndividualType, InnovationType>::assignInnovationNumberToAtt
 }
 
 template <class IndividualType, class InnovationType>
-void NEATAlgorithm <IndividualType, InnovationType>::logPopulationStatistics()
+void NEATPlusAlgorithm <IndividualType, InnovationType>::logPopulationStatistics()
 {
     if (!currentLogFile.is_open()) {
         time_t now = time(NULL);

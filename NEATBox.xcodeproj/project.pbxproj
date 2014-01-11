@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E20CC52F187C447E00AAA3DA /* NEATAlgorithm.h in Headers */ = {isa = PBXBuildFile; fileRef = E20CC52D187C447E00AAA3DA /* NEATAlgorithm.h */; };
+		E20CC52F187C447E00AAA3DA /* NEATPlusAlgorithm.h in Headers */ = {isa = PBXBuildFile; fileRef = E20CC52D187C447E00AAA3DA /* NEATPlusAlgorithm.h */; };
+		E21362741881D83000A8DCF1 /* NBUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E21362721881D83000A8DCF1 /* NBUtils.cpp */; };
+		E21362751881D83000A8DCF1 /* NBUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = E21362731881D83000A8DCF1 /* NBUtils.h */; };
 		E249A5EE187E154D009DFEBA /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E249A5ED187E154D009DFEBA /* main.cpp */; };
 		E249A5F0187E154D009DFEBA /* NeatBoxTest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */; };
 		E249A5F4187E155D009DFEBA /* NEATBox.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E20CC51B187C445500AAA3DA /* NEATBox.dylib */; };
-		E249A5F5187E5206009DFEBA /* NEATAlgorithm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC52C187C447E00AAA3DA /* NEATAlgorithm.cpp */; };
+		E249A5F5187E5206009DFEBA /* NEATPlusAlgorithm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC52C187C447E00AAA3DA /* NEATPlusAlgorithm.cpp */; };
 		E249A5F71880422E009DFEBA /* BasicNN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC533187C544100AAA3DA /* BasicNN.cpp */; };
 		E249A5F818804234009DFEBA /* ExampleGoals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */; };
 		E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */; };
@@ -35,15 +37,16 @@
 		E20CC51F187C445500AAA3DA /* NEATBox-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NEATBox-Prefix.pch"; sourceTree = "<group>"; };
 		E20CC520187C445500AAA3DA /* NEATBoxProj.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = NEATBoxProj.xcconfig; sourceTree = "<group>"; };
 		E20CC521187C445500AAA3DA /* NEATBoxTarget.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = NEATBoxTarget.xcconfig; sourceTree = "<group>"; };
-		E20CC52C187C447E00AAA3DA /* NEATAlgorithm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NEATAlgorithm.cpp; sourceTree = "<group>"; };
-		E20CC52D187C447E00AAA3DA /* NEATAlgorithm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NEATAlgorithm.h; sourceTree = "<group>"; };
-		E20CC530187C453E00AAA3DA /* NEATTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NEATTypes.h; sourceTree = "<group>"; };
+		E20CC52C187C447E00AAA3DA /* NEATPlusAlgorithm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NEATPlusAlgorithm.cpp; sourceTree = "<group>"; };
+		E20CC52D187C447E00AAA3DA /* NEATPlusAlgorithm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NEATPlusAlgorithm.h; sourceTree = "<group>"; };
 		E20CC533187C544100AAA3DA /* BasicNN.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BasicNN.cpp; sourceTree = "<group>"; };
 		E20CC534187C544100AAA3DA /* BasicNN.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BasicNN.h; sourceTree = "<group>"; };
-		E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ExampleGoals.cpp; sourceTree = "<group>"; };
-		E20CC538187C612C00AAA3DA /* ExampleGoals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExampleGoals.h; sourceTree = "<group>"; };
-		E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ExampleRun.cpp; sourceTree = "<group>"; };
-		E20CC53C187C621B00AAA3DA /* ExampleRun.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExampleRun.h; sourceTree = "<group>"; };
+		E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ExampleGoals.cpp; path = ../NEATBox/ExampleGoals.cpp; sourceTree = "<group>"; };
+		E20CC538187C612C00AAA3DA /* ExampleGoals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ExampleGoals.h; path = ../NEATBox/ExampleGoals.h; sourceTree = "<group>"; };
+		E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ExampleRun.cpp; path = ../NEATBox/ExampleRun.cpp; sourceTree = "<group>"; };
+		E20CC53C187C621B00AAA3DA /* ExampleRun.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ExampleRun.h; path = ../NEATBox/ExampleRun.h; sourceTree = "<group>"; };
+		E21362721881D83000A8DCF1 /* NBUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NBUtils.cpp; sourceTree = "<group>"; };
+		E21362731881D83000A8DCF1 /* NBUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NBUtils.h; sourceTree = "<group>"; };
 		E249A5EB187E154D009DFEBA /* NeatBoxTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NeatBoxTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E249A5ED187E154D009DFEBA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = NeatBoxTest.1; sourceTree = "<group>"; };
@@ -89,7 +92,8 @@
 		E20CC51D187C445500AAA3DA /* NEATBox */ = {
 			isa = PBXGroup;
 			children = (
-				E20CC530187C453E00AAA3DA /* NEATTypes.h */,
+				E21362731881D83000A8DCF1 /* NBUtils.h */,
+				E21362721881D83000A8DCF1 /* NBUtils.cpp */,
 				E20CC52B187C446800AAA3DA /* Base Algorithm */,
 				E20CC520187C445500AAA3DA /* NEATBoxProj.xcconfig */,
 				E20CC521187C445500AAA3DA /* NEATBoxTarget.xcconfig */,
@@ -109,8 +113,8 @@
 		E20CC52B187C446800AAA3DA /* Base Algorithm */ = {
 			isa = PBXGroup;
 			children = (
-				E20CC52D187C447E00AAA3DA /* NEATAlgorithm.h */,
-				E20CC52C187C447E00AAA3DA /* NEATAlgorithm.cpp */,
+				E20CC52D187C447E00AAA3DA /* NEATPlusAlgorithm.h */,
+				E20CC52C187C447E00AAA3DA /* NEATPlusAlgorithm.cpp */,
 			);
 			name = "Base Algorithm";
 			sourceTree = "<group>";
@@ -120,10 +124,6 @@
 			children = (
 				E20CC534187C544100AAA3DA /* BasicNN.h */,
 				E20CC533187C544100AAA3DA /* BasicNN.cpp */,
-				E20CC538187C612C00AAA3DA /* ExampleGoals.h */,
-				E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */,
-				E20CC53C187C621B00AAA3DA /* ExampleRun.h */,
-				E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */,
 			);
 			name = "Example Classes";
 			path = ../NEATBox;
@@ -133,6 +133,10 @@
 			isa = PBXGroup;
 			children = (
 				E20CC532187C531300AAA3DA /* Example Classes */,
+				E20CC538187C612C00AAA3DA /* ExampleGoals.h */,
+				E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */,
+				E20CC53C187C621B00AAA3DA /* ExampleRun.h */,
+				E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */,
 				E249A5ED187E154D009DFEBA /* main.cpp */,
 				E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */,
 			);
@@ -146,7 +150,8 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E20CC52F187C447E00AAA3DA /* NEATAlgorithm.h in Headers */,
+				E21362751881D83000A8DCF1 /* NBUtils.h in Headers */,
+				E20CC52F187C447E00AAA3DA /* NEATPlusAlgorithm.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -219,7 +224,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E249A5F5187E5206009DFEBA /* NEATAlgorithm.cpp in Sources */,
+				E249A5F5187E5206009DFEBA /* NEATPlusAlgorithm.cpp in Sources */,
+				E21362741881D83000A8DCF1 /* NBUtils.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
