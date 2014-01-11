@@ -12,10 +12,11 @@
 #include <sstream>
 #include <wordexp.h>
 
+
+
 template <class IndividualType, class InnovationType>
-NEATAlgorithm <IndividualType, InnovationType>::NEATAlgorithm(int populationSize, int maxGenerations, int maxStagnation, float p_c, float p_m_attach, float p_m_node, float p_m_conn)
-:populationSize(populationSize), maxStagnation(maxStagnation), maxGenerations(maxGenerations), p_c(p_c),
-p_m_node(p_m_node), p_m_conn(p_m_conn), p_m_attach(p_m_attach)
+NEATAlgorithm <IndividualType, InnovationType>::NEATAlgorithm(int populationSize, int maxGenerations, int maxStagnation)
+:populationSize(populationSize), maxStagnation(maxStagnation), maxGenerations(maxGenerations)
 
 {
     _bestIndividual = NULL;
@@ -33,7 +34,7 @@ NEATAlgorithm <IndividualType, InnovationType>::~NEATAlgorithm()
     //empty the species lists
     typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
-        std::vector<SystemInfo<IndividualType> > members = (*speciesIterator)->members;
+        std::vector<SystemInfo<IndividualType> > members = speciesIterator->members;
         typename std::vector<SystemInfo<IndividualType> >::iterator it = members.begin();
         while (it != members.end()) {
             it = members.erase(it);
@@ -41,6 +42,7 @@ NEATAlgorithm <IndividualType, InnovationType>::~NEATAlgorithm()
         speciesIterator = speciesList.erase(speciesIterator);
     }
     currentLogFile.close();
+    delete origin;
 }
 
 // return true if sys1 comes before sys2
@@ -57,17 +59,17 @@ static bool compareInnovationNumbers(const InnovationType a1, const InnovationTy
 }
 
 template <class IndividualType, class InnovationType>
-IndividualType NEATAlgorithm <IndividualType, InnovationType>::combineSystems(IndividualType sys1, IndividualType sys2)
+IndividualType NEATAlgorithm <IndividualType, InnovationType>::combineSystems(IndividualType &sys1, IndividualType &sys2)
 {
     
-    if (sys1 == sys2) {
+    if (&sys1 == &sys2) {
         // breeding with myself?
-        return new IndividualType(sys1);
+        return IndividualType(sys1);
     }
     
-    IndividualType newChild = IndividualType();
-    std::vector<InnovationType> genome1 = sys1.attachmentGenome();
-    std::vector<InnovationType> genome2 = sys2.attachmentGenome();
+    IndividualType newChild = createInitialIndividual();
+    std::vector<InnovationType> genome1 = sys1.connectionGenome();
+    std::vector<InnovationType> genome2 = sys2.connectionGenome();
     
     // holy crap, c++ has some good standard methods, like *set difference*
     std::vector<InnovationType> matchingGenes1;
@@ -75,24 +77,24 @@ IndividualType NEATAlgorithm <IndividualType, InnovationType>::combineSystems(In
     std::vector<InnovationType> disjointandExcess;
     
     // set intersection takes from the first range given - I do it twice so I have the matches from parent 1 and from parent 2.
-    std::set_intersection(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(matchingGenes1), compareInnovationNumbers);
-    std::set_intersection(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(),std::back_inserter(matchingGenes2), compareInnovationNumbers);
+    std::set_intersection(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(matchingGenes1), compareInnovationNumbers<InnovationType>);
+    std::set_intersection(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(),std::back_inserter(matchingGenes2), compareInnovationNumbers<InnovationType>);
     
     // difference takes things in the first range that are not in the second - perfect if we assume parent 1 is more fit
-    std::set_difference(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(disjointandExcess), compareInnovationNumbers);
+    std::set_difference(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(disjointandExcess), compareInnovationNumbers<InnovationType>);
     
-
+    
     // first we handle the matching genes
     for (int i=0; i<matchingGenes1.size(); i++){
-            InnovationType gene = matchingGenes1[i];
-            IndividualType parent = sys1;
-                // randomly choose 1 to add to the child
-                float selector = (double)rand()/RAND_MAX;
-            
-            if (selector <= p_c) {
-                parent = sys2;
-                gene = matchingGenes2[i];
-            }
+        InnovationType gene = matchingGenes1[i];
+        IndividualType parent = sys1;
+        // randomly choose 1 to add to the child
+        double selector = (double )rand()/RAND_MAX;
+        
+        if (selector <= p_c) {
+            parent = sys2;
+            gene = matchingGenes2[i];
+        }
         newChild.addGeneFromParentSystem(parent, gene);
     }
     
@@ -100,7 +102,7 @@ IndividualType NEATAlgorithm <IndividualType, InnovationType>::combineSystems(In
     for (int i=0; i<disjointandExcess.size(); i++) {
         newChild.addGeneFromParentSystem(sys1, disjointandExcess[i]);
     }
-        
+    
     return newChild;
 }
 
@@ -108,43 +110,41 @@ IndividualType NEATAlgorithm <IndividualType, InnovationType>::combineSystems(In
 template <class IndividualType, class InnovationType>
 void NEATAlgorithm <IndividualType, InnovationType>::spawnNextGeneration()
 {
-    double sharedFitnessSum = 0.0;
+    double  sharedFitnessSum = 0.0;
     typename std::vector<SystemInfo<IndividualType> >::iterator it = population.begin();
     while (it != population.end()) {
-        sharedFitnessSum += (*it)->fitness;
+        sharedFitnessSum += it->fitness;
         it++;
     }
     
     // create population/2 children through recombination
     std::vector<SystemInfo<IndividualType> >newGeneration;
-
+    
     do {
-        SystemInfo<IndividualType> p1;
-        SystemInfo<IndividualType> p2;
-        selectParents(&p1, &p2, sharedFitnessSum);
+        std::pair<SystemInfo<IndividualType> , SystemInfo<IndividualType> > p = selectParents(sharedFitnessSum);
+        SystemInfo<IndividualType> p1 = p.first;
+        SystemInfo<IndividualType> p2 = p.second;
         
         IndividualType child = combineSystems(p1.individual, p2.individual);
         // mutate the new individual (maybe)
         mutateSystem(child);
         
-        SystemInfo<IndividualType> i = SystemInfo<IndividualType>();
-        i->system = child;
+        SystemInfo<IndividualType> i = SystemInfo<IndividualType>(child);
         newGeneration.push_back(i);
     } while (newGeneration.size() < populationSize);
     
     // add the original population too
-    population.insert(population.end(), newGeneration.begin(), newGeneration.end());
-
+   population.insert(population.end(), newGeneration.begin(), newGeneration.end());
+   // population = newGeneration;
 }
 
 template <class IndividualType, class InnovationType>
-void NEATAlgorithm <IndividualType, InnovationType>::selectParents(SystemInfo<IndividualType> *parent1, SystemInfo<IndividualType> *parent2, double fitnessSum)
+std::pair<SystemInfo<IndividualType>, SystemInfo<IndividualType> > NEATAlgorithm <IndividualType, InnovationType>::selectParents(double  fitnessSum)
 {
-    if (!parent1 || !parent2)
-        return; // don't waste my time
     
-    NEATSpecies<IndividualType> breedingSpecies = NULL;
-
+    
+    NEATSpecies<IndividualType> breedingSpecies;
+    
     // now if we're stagnant, we only allow the top 2 species to breed (according to the NEAT paper)
     
     if (speciesList.size() > 1 && stagnantGenerations >= 2*maxStagnation/3) {
@@ -155,13 +155,13 @@ void NEATAlgorithm <IndividualType, InnovationType>::selectParents(SystemInfo<In
         // then chose parents at random from within that species
         
         // Assume sorted population
-        float selector = ((double)rand()/RAND_MAX);
+        double selector = ((double )rand()/RAND_MAX);
         
         typename std::vector<NEATSpecies<IndividualType> >::iterator it = speciesList.begin();
         breedingSpecies = speciesList.back(); // in case something goes wrong with selection below
-        double cumulativeFitness = 0.0;
+        double  cumulativeFitness = 0.0;
         while (it != speciesList.end()) {
-            cumulativeFitness += (*it)->totalSharedFitness/fitnessSum;
+            cumulativeFitness += it->totalSharedFitness/fitnessSum;
             if (cumulativeFitness >= selector) {
                 breedingSpecies = *it;
                 break;
@@ -172,21 +172,23 @@ void NEATAlgorithm <IndividualType, InnovationType>::selectParents(SystemInfo<In
     
     // if there is only 1 individual in that species... breed it with itself... (like a plant)
     // is this right? Should we kill off species with only one member?
-    std::vector<SystemInfo<IndividualType> >individuals = breedingSpecies->members;
- 
+    std::vector<SystemInfo<IndividualType> >individuals = breedingSpecies.members;
+    
+    SystemInfo<IndividualType> parent1 = (individuals[0]);
+    SystemInfo<IndividualType> parent2 = (individuals[0]);
+    
     if (individuals.size() > 1) {
         int parentPosition = arc4random_uniform(individuals.size());
-        *parent1 = individuals[parentPosition];
+        parent1 = SystemInfo<IndividualType>(individuals[parentPosition]);
         
         int parentPosition2;
         do {
             parentPosition2 = arc4random_uniform(individuals.size());
         } while (parentPosition2 == parentPosition);
-        *parent2 = individuals[parentPosition2];
-    } else {
-        *parent2 = *parent1 = individuals[0];
+        parent2 = SystemInfo<IndividualType>(individuals[parentPosition2]);
     }
     
+    return std::pair<SystemInfo<IndividualType> , SystemInfo<IndividualType> >(parent1, parent2);
 }
 
 
@@ -201,22 +203,22 @@ void NEATAlgorithm <IndividualType, InnovationType>::speciate()
         
         typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
         while (speciesIterator != speciesList.end()) {
-            double distance = genomeDistance((*populationIter)->system, (*speciesIterator)->representative);
+            double  distance = genomeDistance(populationIter->individual, *speciesIterator->representative);
             if (fabs(distance) < d_threshold) {
                 added = true;
-                (*speciesIterator)->members.push_back(*populationIter);
+                speciesIterator->members.push_back(*populationIter);
                 break;
             }
             speciesIterator++;
         }
-      
+        
         if (!added) {
             // new species!!
             NEATSpecies<IndividualType> s = NEATSpecies<IndividualType>();
-            s->representative = new IndividualType(populationIter->individual);
-            s->members.push_back(*populationIter);
+            s.representative = new IndividualType(populationIter->individual);
+            s.members.push_back(*populationIter);
             speciesList.push_back(s);
-            s->speciesNumber = nextSpeciesNumber++;
+            s.speciesNumber = nextSpeciesNumber++;
         }
         
         populationIter++;
@@ -228,28 +230,27 @@ void NEATAlgorithm <IndividualType, InnovationType>::speciate()
     typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
         // pick a new rep
-        std::vector<SystemInfo<IndividualType> > members = (*speciesIterator)->members;
+        std::vector<SystemInfo<IndividualType> > &members = speciesIterator->members;
         if (members.size() == 0) {
             NEATSpecies<IndividualType> extinctSpecies = *speciesIterator;
             speciesIterator = speciesList.erase(speciesIterator);
-            delete extinctSpecies;
         } else {
             int index = arc4random_uniform(members.size());
-            IndividualType *rep = new IndividualType(*(members[index]->system));
-            delete (*speciesIterator)->representative;
-            (*speciesIterator)->representative = rep;
+            IndividualType rep = (members[index].individual);
+            delete speciesIterator->representative;
+            speciesIterator->representative = new IndividualType(rep);
             
-           // fprintf(stderr, "\tSpecies %d: %ld members\n", ++i, members.size());
+            // fprintf(stderr, "\tSpecies %d: %ld members\n", ++i, members.size());
             
             // update the fitnesses
-            double totalFitness = 0.0;
+            double  totalFitness = 0.0;
             typename std::vector<SystemInfo<IndividualType> >::iterator memberIterator = members.begin();
             while (memberIterator != members.end()) {
-                (*memberIterator)->fitness /= members.size();
-                totalFitness += (*memberIterator)->fitness;
+                memberIterator->fitness /= members.size();
+                totalFitness += memberIterator->fitness;
                 memberIterator++;
             }
-            (*speciesIterator)->totalSharedFitness = totalFitness;
+            speciesIterator->totalSharedFitness = totalFitness;
             speciesIterator++;
         }
     }
@@ -257,10 +258,10 @@ void NEATAlgorithm <IndividualType, InnovationType>::speciate()
 
 
 template <class IndividualType, class InnovationType>
-double NEATAlgorithm <IndividualType, InnovationType>::genomeDistance(const IndividualType& sys1, const IndividualType& sys2)
+double  NEATAlgorithm <IndividualType, InnovationType>::genomeDistance( IndividualType& sys1,  IndividualType& sys2)
 {
-    std::vector<InnovationType> genome1 = sys1.attachmentGenome();
-    std::vector<InnovationType> genome2 = sys2.attachmentGenome();
+    std::vector<InnovationType> genome1 = sys1.connectionGenome();
+    std::vector<InnovationType> genome2 = sys2.connectionGenome();
     
     // find the longer one
     size_t longerSize = (genome1.size() > genome2.size() ? genome1.size()  : genome2.size());
@@ -269,30 +270,30 @@ double NEATAlgorithm <IndividualType, InnovationType>::genomeDistance(const Indi
     size_t nExcess = 0;
     size_t nMatching = 0;
     size_t matchingDiff = 0;
-
+    
     // yay stdlib!
     std::vector<InnovationType> matchingGenes1;
     std::vector<InnovationType> matchingGenes2;
     std::vector<InnovationType> disjointFromSys1;
     std::vector<InnovationType> disjointFromSys2;
     
-
+    
     // set intersection takes from the first range given - I do it twice so I have the matches from parent 1 and from parent 2.
-    std::set_intersection(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(matchingGenes1), compareInnovationNumbers);
-    std::set_intersection(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(),std::back_inserter(matchingGenes2), compareInnovationNumbers);
+    std::set_intersection(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(matchingGenes1), compareInnovationNumbers<InnovationType>);
+    std::set_intersection(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(),std::back_inserter(matchingGenes2), compareInnovationNumbers<InnovationType>);
     
     // difference takes things in the first range that are not in the second - we will have to check for excess ourself
-    std::set_difference(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(disjointFromSys1), compareInnovationNumbers);
-    std::set_difference(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(), std::back_inserter(disjointFromSys2), compareInnovationNumbers);
-
+    std::set_difference(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(disjointFromSys1), compareInnovationNumbers<InnovationType>);
+    std::set_difference(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(), std::back_inserter(disjointFromSys2), compareInnovationNumbers<InnovationType>);
+    
     
     nMatching = matchingGenes2.size();
     // first find the distance between matching genes
     for (int i=0; i<nMatching; i++) {
         InnovationType a1 = matchingGenes1[i];
         InnovationType a2 = matchingGenes2[i];
-  
-        matchingDiff += IndividualType::attachmentDifference(a1, a2);
+        
+        matchingDiff += IndividualType::connectionDifference(a1, a2);
     }
     
     // now determine the excess vs disjoint
@@ -335,9 +336,9 @@ double NEATAlgorithm <IndividualType, InnovationType>::genomeDistance(const Indi
         }
     }
     
-
-    double d = w_disjoint*nDisjoint/longerSize + w_excess*nExcess/longerSize + w_matching*matchingDiff/nMatching;
-
+    
+    double  d = w_disjoint*nDisjoint/longerSize + w_excess*nExcess/longerSize + w_matching*matchingDiff/nMatching;
+    
     //assert(!isUnreasonable(d));
     return d;
 }
@@ -348,12 +349,11 @@ void NEATAlgorithm <IndividualType, InnovationType>::prepareInitialPopulation()
 {
     // mutate the initial system to get an initial population
     while (population.size() < populationSize) {
-        IndividualType newSystem = IndividualType();
+        IndividualType newSystem = createInitialIndividual();
         mutateSystem(newSystem);
         SystemInfo<IndividualType> info = SystemInfo<IndividualType>(newSystem);
         population.push_back(info);
     }
-    origin = population.front();
 }
 
 
@@ -369,62 +369,61 @@ bool NEATAlgorithm <IndividualType, InnovationType>::tick()
 {
     if (population.size() == 0) {
         prepareInitialPopulation();
-        if (!origin)
-            origin = new IndividualType(*(population.front()->system));
+        
+        origin = new IndividualType(population.front().individual);
     }
     
-    double bestFitness = -INFINITY; // we want zero fitness
+    double  bestFitness = -INFINITY; // we want zero fitness
     
     for (size_t popIter = 0; popIter <population.size(); popIter++) {
-        SystemInfo<IndividualType> individual = population[popIter];
-        individual.fitness = evaluationFunc(individual);
+        SystemInfo<IndividualType>& individual = population[popIter];
+        individual.fitness = evaluationFunc(individual.individual);
     }
     
- 
+    
     speciate();
-
+    
     
     // figure out how many of each species to save
-    double sharedFitnessSum = 0.0;
+    double  sharedFitnessSum = 0.0;
     for (int i=0; i<speciesList.size(); i++) {
-        sharedFitnessSum += speciesList[i]->totalSharedFitness;
+        sharedFitnessSum += speciesList[i].totalSharedFitness;
     }
     
     std::vector<SystemInfo<IndividualType> > individualsToSave;
     // sort the species to ensure we keep the best
-    std::sort(speciesList.begin(), speciesList.end(), compareSpeciesFitness);
+    std::sort(speciesList.begin(), speciesList.end(), compareSpeciesFitness<IndividualType>);
     
     typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
     
     while (speciesIterator != speciesList.end()) {
         size_t numMembers = speciesIterator->members.size();
         
-        double proportionToSave = (speciesIterator->totalSharedFitness)/sharedFitnessSum;
-        int numToSave = std::min((proportionToSave*populationSize), (int)numMembers);
+        double  proportionToSave = (speciesIterator->totalSharedFitness)/sharedFitnessSum;
+        int numToSave = std::min((int)(proportionToSave*populationSize), (int)numMembers);
         numToSave = std::max(numToSave, 1); // save 1 of each species
-        std::sort(speciesIterator->members.begin(), speciesIterator->members.end(), compareIndividuals);
-
+        std::sort(speciesIterator->members.begin(), speciesIterator->members.end(), compareIndividuals<IndividualType>);
+        
         // don't let population grow unchecked
         if (individualsToSave.size() > populationSize)
             numToSave = 0;
         
-       // fprintf(stderr, "Species %d: %d/%ld\n", i++, numToSave,  (*speciesIterator)->members.size());
-
+        // fprintf(stderr, "Species %d: %d/%ld\n", i++, numToSave,  (*speciesIterator)->members.size());
+        
         
         for (int j=0; j<numToSave; j++) {
             SystemInfo<IndividualType> individual = speciesIterator->members[j];
-            double rawFitness = individual.fitness * numMembers;
+            double  rawFitness = individual.fitness * numMembers;
             if (rawFitness > bestFitness) {
                 bestFitness = rawFitness;
-                _bestIndividual = individual;
+                _bestIndividual = new IndividualType(individual.individual);
             }
             individualsToSave.push_back(individual);
         }
         
-        typename std::vector<SystemInfo<IndividualType> >::iterator deleteIt =  (*speciesIterator)->members.begin()+numToSave;
-        while (deleteIt !=  (*speciesIterator)->members.end()) {
-            delete *(deleteIt);
-            deleteIt =  (*speciesIterator)->members.erase(deleteIt);
+        typename std::vector<SystemInfo<IndividualType> >::iterator deleteIt =  speciesIterator->members.begin()+numToSave;
+        while (deleteIt !=  speciesIterator->members.end()) {
+            deleteIt =  speciesIterator->members.erase(deleteIt);
         }
         
         if (numToSave == 0)
@@ -438,7 +437,7 @@ bool NEATAlgorithm <IndividualType, InnovationType>::tick()
     if (bestFitness > allTimeBestFitness)
         allTimeBestFitness = bestFitness;
     
-    // stagnation if fitnesses are within .1% of each other
+    // stagnation if fitnesses are within 10% of each other
     
     if (fabs( 1 - (lastBestFitness/bestFitness)) < .1)
         stagnantGenerations++;
@@ -449,7 +448,7 @@ bool NEATAlgorithm <IndividualType, InnovationType>::tick()
     
     lastBestFitness = bestFitness;
     
-    bool stop =  (generations >= maxGenerations) || stopFunc(bestFitness);
+    bool stop =  (generations >= maxGenerations) || (stopFunc && stopFunc(bestFitness));
     logPopulationStatistics();
     
     // empty the innovation list before spawning more
@@ -461,20 +460,20 @@ bool NEATAlgorithm <IndividualType, InnovationType>::tick()
         spawnNextGeneration();
     }
     
-   
+    
     // empty the species lists
     speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
-       (*speciesIterator)->members.clear();
+        speciesIterator->members.clear();
         speciesIterator++;
     }
-
+    
     
     return  stop;
 }
- 
+
 template <class IndividualType, class InnovationType>
-const IndividualType & NEATAlgorithm <IndividualType, InnovationType>::bestIndividual()
+IndividualType  *NEATAlgorithm <IndividualType, InnovationType>::bestIndividual()
 {
     return _bestIndividual;
 }
@@ -487,40 +486,46 @@ long NEATAlgorithm <IndividualType, InnovationType>::getNumberOfIterations()
 
 
 template <class IndividualType, class InnovationType>
-void NEATAlgorithm <IndividualType, InnovationType>::mutateSystem(IndividualType original)
+void NEATAlgorithm <IndividualType, InnovationType>::mutateSystem(IndividualType& original)
 {
     
-    std::vector<InnovationType> allAttachments = original->attachmentGenome(false);
+    std::vector<InnovationType> allAttachments = original.connectionGenome();
     typename std::vector<InnovationType>::iterator it = allAttachments.begin();
     while (it != allAttachments.end()) {
-        float selector = (double)rand()/RAND_MAX;
-        if (selector < p_m_attach)
-            original.mutateAttachmentWeight();
+        double selector = (double )rand()/RAND_MAX;
+        if (selector < p_m_conn)
+            original.mutateConnectionWeight();
         it++;
     }
     
+    long nNodes = original.numberOfNodes();
+    for (long i=0; i<nNodes; i++) {
+        double selector = (double )rand()/RAND_MAX;
+        if (selector < p_m_node)
+            original.mutateNode(i);
+    }
+        
     // add attachment or add node - or both
-    float selector1 = (double)rand()/RAND_MAX;
-    if (selector1 < p_m_conn) {
+    double selector1 = (double )rand()/RAND_MAX;
+    if (selector1 < p_m_conn_ins) {
         // insert a new connection
-            // update the innovation number
+        // update the innovation number
         InnovationType created = original.createConnection();
         assignInnovationNumberToAttachment(original, created);
     }
     
-    float selector2 = (double)rand()/RAND_MAX;
-    if (selector2 < p_m_node) {
+    double selector2 = (double )rand()/RAND_MAX;
+    if (selector2 < p_m_node_ins) {
         // add a node somewhere if possible
-        std::pair<InnovationType, InnovationType> new_edges = original.createConnection();
+        std::pair<InnovationType, InnovationType> new_edges = original.insertNode();
         assignInnovationNumberToAttachment(original,  new_edges.first);
-                assignInnovationNumberToAttachment(original,  new_edges.second);
-                
+        assignInnovationNumberToAttachment(original,  new_edges.second);
     }
- 
+    
 }
 
 template <class IndividualType, class InnovationType>
-void NEATAlgorithm <IndividualType, InnovationType>::assignInnovationNumberToAttachment(IndividualType individual, InnovationType i){
+void NEATAlgorithm <IndividualType, InnovationType>::assignInnovationNumberToAttachment(IndividualType& individual, InnovationType i){
     // have we already created this 'innovation' in this generation?
     typename std::vector<InnovationType>::iterator it = std::find(newConnections.begin(), newConnections.end(), i);
     if (it!= newConnections.end()) {
@@ -539,7 +544,7 @@ void NEATAlgorithm <IndividualType, InnovationType>::logPopulationStatistics()
         time_t now = time(NULL);
         std::stringstream s;
         wordexp_t directory;
-        wordexp("~/temp/machines/", &directory, 0);
+        wordexp("~/temp/neatNN/", &directory, 0);
         s << directory.we_wordv[0];
         s << "neat-log" << now << ".log";
         std::string filename = s.str();
@@ -560,21 +565,21 @@ void NEATAlgorithm <IndividualType, InnovationType>::logPopulationStatistics()
         currentLogFile << best.fitness*n << " ";
         SystemInfo<IndividualType> worst = members.back();
         currentLogFile << worst.fitness*n << " ";
-        double meanFitness =(*speciesIter)->totalSharedFitness;
+        double  meanFitness =speciesIter->totalSharedFitness;
         currentLogFile << meanFitness << " ";
         // standard dev - from http://stackoverflow.com/questions/7616511/calculate-mean-and-standard-deviation-from-a-vector-of-samples-in-c-using-boos
-  
-        double sq_sum = 0;
+        
+        double  sq_sum = 0;
         typename std::vector<SystemInfo<IndividualType> >::iterator it = members.begin();
         while (it != members.end()) {
-            sq_sum += ((*it)->fitness - meanFitness)*((*it)->fitness - meanFitness);
+            sq_sum += (it->fitness - meanFitness)*(it->fitness - meanFitness);
             it++;
         }
         
-        double stdev = sqrt(sq_sum /n);
+        double  stdev = sqrt(sq_sum /n);
         currentLogFile << stdev << " ";
         
-        double speciesDist = genomeDistance((*speciesIter)->representative, origin);
+        double  speciesDist = genomeDistance(*speciesIter->representative, *origin);
         currentLogFile << speciesDist << "\n";
         speciesIter++;
         
@@ -582,3 +587,4 @@ void NEATAlgorithm <IndividualType, InnovationType>::logPopulationStatistics()
     currentLogFile << "\n";
     currentLogFile.flush();
 }
+

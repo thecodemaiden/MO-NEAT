@@ -12,6 +12,16 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <set>
+
+
+enum ActivationFunc {
+    STEP_FUNC,
+    TANH_FUNC,
+    ABS_SIG_FUNC,
+    GAUSSIAN_FUNC,
+    FUNC_SENTINEL,
+};
 
 struct Edge {
     int nodeFrom;
@@ -23,9 +33,10 @@ struct Edge {
     bool disabled;
         
     Edge(int from, int to)
-    :nodeFrom(from), nodeTo(to)
+    :nodeFrom(from), nodeTo(to), innovationNumber(0),disabled(false)
     {
-        weight = 1.0; innovationNumber = 0; disabled = false;
+        // random weight
+        weight = ((double)rand()/RAND_MAX - 0.5)*2;
     }
     
     // equality
@@ -49,15 +60,16 @@ struct Edge {
 };
 
 struct Node {
-    int type; // function type: linear, logistic, step
+    ActivationFunc type; // function type: linear, logistic, step
     int indegree; // helps with inserting new connections
     int outdegree;
+    double bias;
     
-    Node():type(0), indegree(0), outdegree(0){};
-   // int name; // for from and to
-    //Node(int n) :name(n) {type = 0;}
+    double threshold = 0.5;
+    double activatedVal = 1.0;
+    double deactivatedVal = 0.0;
+    Node():type(GAUSSIAN_FUNC), indegree(0), outdegree(0), bias(0){};
 };
-
 
 
 class ExampleNetwork
@@ -68,23 +80,42 @@ class ExampleNetwork
     // the internal representation of your graph is up to you
     // this is a weighted directed graph, the standard model of a NN
 public:
-    ExampleNetwork();
+#pragma mark - Necessary for NEATAlgorithm to work
+    static double connectionDifference(const Edge &c1, const Edge &c2);
+
+    ExampleNetwork(int nInputs, int nOutputs);
     
     void addGeneFromParentSystem(ExampleNetwork parent, Edge gene);
-    std::vector<Edge> attachmentGenome();
-    void mutateAttachmentWeight();
+    std::vector<Edge> connectionGenome();
+    void updateInnovationNumber(const Edge &info);
+
+    void mutateConnectionWeight();
+    void mutateNode(long n);
     std::pair<Edge, Edge> insertNode();
     Edge createConnection();
     
-    void updateInnovationNumber(const Edge &info);
+#pragma mark - End of necessary methods
+    // simulate the network for evaluation
+    // we can create recurrent networks, and we usually want them to settle
+    std::pair<std::vector<double>, bool> simulateTillEquilibrium(std::vector<double> inputValues, int maxSteps);
     
     std::string display();
- 
-    static double attachmentDifference(const Edge &c1, const Edge &c2);
-    static ExampleNetwork smallestSystem();
     
     long numberOfNodes();
     long numberOfEdges();
+    
+    std::vector<long> listInputNodes();
+    std::vector<long> listOutputNodes();
+    
+private:
+    std::set<long> inputNodes;
+    std::set<long> outputNodes;
+    
+    std::pair<Edge, Edge> insertNodeOnEdge(Edge &e);
+    
+    // helpers for simulation
+    std::vector<double> nodeOuputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs);
+    std::vector<Edge> inputsToNode(long n);
 };
 
 #endif /* defined(__NEATBox__BaseNetwork__) */

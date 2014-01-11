@@ -7,15 +7,28 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E20CC52E187C447E00AAA3DA /* NEATAlgorithm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC52C187C447E00AAA3DA /* NEATAlgorithm.cpp */; };
 		E20CC52F187C447E00AAA3DA /* NEATAlgorithm.h in Headers */ = {isa = PBXBuildFile; fileRef = E20CC52D187C447E00AAA3DA /* NEATAlgorithm.h */; };
-		E20CC535187C544100AAA3DA /* ExampleNetwork.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC533187C544100AAA3DA /* ExampleNetwork.cpp */; };
-		E20CC536187C544100AAA3DA /* ExampleNetwork.h in Headers */ = {isa = PBXBuildFile; fileRef = E20CC534187C544100AAA3DA /* ExampleNetwork.h */; };
-		E20CC539187C612C00AAA3DA /* ExampleGoals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */; };
-		E20CC53A187C612C00AAA3DA /* ExampleGoals.h in Headers */ = {isa = PBXBuildFile; fileRef = E20CC538187C612C00AAA3DA /* ExampleGoals.h */; };
-		E20CC53D187C621B00AAA3DA /* ExampleRun.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */; };
-		E20CC53E187C621B00AAA3DA /* ExampleRun.h in Headers */ = {isa = PBXBuildFile; fileRef = E20CC53C187C621B00AAA3DA /* ExampleRun.h */; };
+		E249A5EE187E154D009DFEBA /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E249A5ED187E154D009DFEBA /* main.cpp */; };
+		E249A5F0187E154D009DFEBA /* NeatBoxTest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */; };
+		E249A5F4187E155D009DFEBA /* NEATBox.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E20CC51B187C445500AAA3DA /* NEATBox.dylib */; };
+		E249A5F5187E5206009DFEBA /* NEATAlgorithm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC52C187C447E00AAA3DA /* NEATAlgorithm.cpp */; };
+		E249A5F71880422E009DFEBA /* ExampleNetwork.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC533187C544100AAA3DA /* ExampleNetwork.cpp */; };
+		E249A5F818804234009DFEBA /* ExampleGoals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */; };
+		E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E249A5E9187E154D009DFEBA /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				E249A5F0187E154D009DFEBA /* NeatBoxTest.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		E20CC51B187C445500AAA3DA /* NEATBox.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = NEATBox.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -31,6 +44,9 @@
 		E20CC538187C612C00AAA3DA /* ExampleGoals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExampleGoals.h; sourceTree = "<group>"; };
 		E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ExampleRun.cpp; sourceTree = "<group>"; };
 		E20CC53C187C621B00AAA3DA /* ExampleRun.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExampleRun.h; sourceTree = "<group>"; };
+		E249A5EB187E154D009DFEBA /* NeatBoxTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NeatBoxTest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E249A5ED187E154D009DFEBA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = NeatBoxTest.1; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +57,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E249A5E8187E154D009DFEBA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E249A5F4187E155D009DFEBA /* NEATBox.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -48,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				E20CC51D187C445500AAA3DA /* NEATBox */,
+				E249A5EC187E154D009DFEBA /* NeatBoxTest */,
 				E20CC51C187C445500AAA3DA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -56,6 +81,7 @@
 			isa = PBXGroup;
 			children = (
 				E20CC51B187C445500AAA3DA /* NEATBox.dylib */,
+				E249A5EB187E154D009DFEBA /* NeatBoxTest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -64,7 +90,6 @@
 			isa = PBXGroup;
 			children = (
 				E20CC530187C453E00AAA3DA /* NEATTypes.h */,
-				E20CC532187C531300AAA3DA /* Example Classes */,
 				E20CC52B187C446800AAA3DA /* Base Algorithm */,
 				E20CC520187C445500AAA3DA /* NEATBoxProj.xcconfig */,
 				E20CC521187C445500AAA3DA /* NEATBoxTarget.xcconfig */,
@@ -101,6 +126,17 @@
 				E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */,
 			);
 			name = "Example Classes";
+			path = ../NEATBox;
+			sourceTree = "<group>";
+		};
+		E249A5EC187E154D009DFEBA /* NeatBoxTest */ = {
+			isa = PBXGroup;
+			children = (
+				E20CC532187C531300AAA3DA /* Example Classes */,
+				E249A5ED187E154D009DFEBA /* main.cpp */,
+				E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */,
+			);
+			path = NeatBoxTest;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -110,10 +146,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E20CC536187C544100AAA3DA /* ExampleNetwork.h in Headers */,
-				E20CC53A187C612C00AAA3DA /* ExampleGoals.h in Headers */,
 				E20CC52F187C447E00AAA3DA /* NEATAlgorithm.h in Headers */,
-				E20CC53E187C621B00AAA3DA /* ExampleRun.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,6 +170,23 @@
 			productReference = E20CC51B187C445500AAA3DA /* NEATBox.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
+		E249A5EA187E154D009DFEBA /* NeatBoxTest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E249A5F1187E154D009DFEBA /* Build configuration list for PBXNativeTarget "NeatBoxTest" */;
+			buildPhases = (
+				E249A5E7187E154D009DFEBA /* Sources */,
+				E249A5E8187E154D009DFEBA /* Frameworks */,
+				E249A5E9187E154D009DFEBA /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NeatBoxTest;
+			productName = NeatBoxTest;
+			productReference = E249A5EB187E154D009DFEBA /* NeatBoxTest */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -159,6 +209,7 @@
 			projectRoot = "";
 			targets = (
 				E20CC51A187C445500AAA3DA /* NEATBox */,
+				E249A5EA187E154D009DFEBA /* NeatBoxTest */,
 			);
 		};
 /* End PBXProject section */
@@ -168,10 +219,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E20CC52E187C447E00AAA3DA /* NEATAlgorithm.cpp in Sources */,
-				E20CC535187C544100AAA3DA /* ExampleNetwork.cpp in Sources */,
-				E20CC53D187C621B00AAA3DA /* ExampleRun.cpp in Sources */,
-				E20CC539187C612C00AAA3DA /* ExampleGoals.cpp in Sources */,
+				E249A5F5187E5206009DFEBA /* NEATAlgorithm.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E249A5E7187E154D009DFEBA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */,
+				E249A5EE187E154D009DFEBA /* main.cpp in Sources */,
+				E249A5F818804234009DFEBA /* ExampleGoals.cpp in Sources */,
+				E249A5F71880422E009DFEBA /* ExampleNetwork.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,6 +319,24 @@
 			};
 			name = Release;
 		};
+		E249A5F2187E154D009DFEBA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		E249A5F3187E154D009DFEBA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -280,6 +357,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		E249A5F1187E154D009DFEBA /* Build configuration list for PBXNativeTarget "NeatBoxTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E249A5F2187E154D009DFEBA /* Debug */,
+				E249A5F3187E154D009DFEBA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 /* End XCConfigurationList section */
 	};

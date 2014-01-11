@@ -16,4 +16,7 @@
 double dummyEvaluation(ExampleNetwork& individual);
 bool goodEnoughDummyFitness(double bestFitness);
 
+double xorEvaluation(ExampleNetwork& individual);
+bool xorFitnessSatisfied(double bestFitness);
+
 #endif /* defined(__NEATBox__ExampleGoals__) */
