@@ -11,6 +11,22 @@
 #include <sstream>
 #include <cmath>
 
+// locate incoming and outgoing edges for a node number
+
+struct has_input {
+    has_input(long n) : n(n) { }
+    bool operator()(Edge e) const { return e.nodeTo == n && !e.disabled; }
+private:
+    long n;
+};
+
+struct has_output {
+    has_output(long n) : n(n) { }
+    bool operator()(Edge e) const { return e.nodeFrom == n;} // disabled connections count for insertAsNode
+private:
+    long n;
+};
+
 std::string activationFuncName(ActivationFunc f)
 {
   //  std::ostringstream name;
@@ -120,20 +136,25 @@ void BasicNN::mutateNode(long n)
 }
 
 
-std::pair<Edge, Edge> BasicNN::insertNode()
+std::vector<Edge> BasicNN::insertNode()
 {
-    // pick an existing, enabled edge at random: split it and insert the node there
-    uint pos;
-   // do {
+    bool insertNormal = true;
+    if (insertNormal) {
+        uint pos;
         pos = arc4random_uniform((uint)edges.size());
-  //  } while (edges.at(pos).disabled);
-    
-    Edge &toSplit = edges.at(pos);
-    
-    return insertNodeOnEdge(toSplit);
+        
+        Edge &toSplit = edges.at(pos);
+        
+        return insertNodeOnEdge(toSplit);
+    } else {
+        uint pos;
+        pos = arc4random_uniform((uint)nodes.size());
+        
+        return insertNodeAsNode(pos);
+    }
 }
 
-std::pair<Edge, Edge> BasicNN::insertNodeOnEdge(Edge &e)
+std::vector<Edge> BasicNN::insertNodeOnEdge(Edge &e)
 {
     uint nextNode = (uint)nodes.size();
     Node newNode = Node();
@@ -149,8 +170,46 @@ std::pair<Edge, Edge> BasicNN::insertNodeOnEdge(Edge &e)
     edges.push_back(e1);
     edges.push_back(e2);
     
-    return std::pair<Edge, Edge>(e1, e2);
+    std::vector<Edge> toReturn;
+    toReturn.push_back(e1);
+    toReturn.push_back(e2);
+    
+    return toReturn;
 }
+
+std::vector<Edge>  BasicNN::insertNodeAsNode(int n)
+{
+    Node newNode = Node();
+    Node oldNode = nodes[n];
+    
+    int newNodeNum = (int)nodes.size();
+    
+    Edge bridge = Edge(n, newNodeNum);
+    
+    std::vector<Edge> toReturn;
+
+    // gather the existing outputs from the old node
+    std::vector<Edge> outputEdges = outputsFromNode(n);
+    
+    // add the bridge
+    toReturn.push_back(bridge);
+    edges.push_back(bridge);
+    
+    // now move the existing outputs to the new node
+    for (long i=0; i<outputEdges.size(); i++) {
+        std::vector<Edge>::iterator it = std::find(edges.begin(), edges.end(), outputEdges[i]);
+        it->nodeFrom = newNodeNum;
+        toReturn.push_back(*it);
+    }
+    
+    newNode.outdegree = oldNode.outdegree;
+    oldNode.outdegree = 1;
+    
+    nodes.push_back(newNode);
+    
+    return toReturn;
+}
+
 
 Edge BasicNN::createConnection()
 {
@@ -231,13 +290,14 @@ double BasicNN::connectionDifference(const Edge &c1, const Edge &c2)
     return weightDiff;
 }
 
-int BasicNN::differingNodes(BasicNN other)
+double BasicNN::nodeDifference(BasicNN other)
 {
     long length = std::min(other.nodes.size(), nodes.size());
-    int d = 0;
+    double d = 0;
     for (long i=0; i<length; i++) {
         if (other.nodes[i].type != nodes[i].type)
             d++;
+        d+= (nodes[i].bias - other.nodes[i].bias);
     }
     return d;
 }
@@ -279,18 +339,6 @@ long BasicNN::numberOfEdges()
 {
     return edges.size();
 }
-
-//long BasicNN::numberOfInputNodes()
-//{
-//    // all nodes with indegree == 0
-//    return std::count_if(nodes.begin(), nodes.end(), isInput);
-//}
-//
-//static bool isOutput(Node n) { return n.outdegree == 0;}
-//long BasicNN::numberOfOutputNodes()
-//{
-//    return std::count_if(nodes.begin(), nodes.end(), isOutput);
-//}
 
 
 SimReturn BasicNN::simulateTillEquilibrium(std::vector<double> inputValues, int maxSteps)
@@ -380,12 +428,7 @@ static double applyActivationFunc(Node n, double inputSum)
     return newOutputs;
 }
 
-struct has_input {
-    has_input(long n) : n(n) { }
-    bool operator()(Edge e) const { return e.nodeTo == n && !e.disabled; }
-private:
-    long n;
-};
+
 
 std::vector<Edge> BasicNN::inputsToNode(long n)
 {
@@ -393,6 +436,20 @@ std::vector<Edge> BasicNN::inputsToNode(long n)
     std::vector<Edge> found;
     
     has_input pred = has_input(n);
+    
+    std::vector<Edge>::iterator it = std::find_if(edges.begin(), edges.end(), pred);
+    for (; it != edges.end(); it = std::find_if(++it, edges.end(), pred)) {
+        found.push_back(*it);
+    }
+    return found;
+}
+
+std::vector<Edge> BasicNN::outputsFromNode(long n)
+{
+    
+    std::vector<Edge> found;
+    
+    has_output pred = has_output(n);
     
     std::vector<Edge>::iterator it = std::find_if(edges.begin(), edges.end(), pred);
     for (; it != edges.end(); it = std::find_if(++it, edges.end(), pred)) {

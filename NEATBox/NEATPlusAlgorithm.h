@@ -67,6 +67,7 @@ protected:
     virtual void prepareInitialPopulation();
         
     void logPopulationStatistics();
+    NEATSpecies<IndividualType> chooseBreedingSpecies(double totalFitness);
 public:
     NEATPlusAlgorithm(int populationSize, int maxGenerations, int maxStagnation);
     ~NEATPlusAlgorithm();

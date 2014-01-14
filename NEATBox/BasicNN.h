@@ -17,9 +17,9 @@
 enum ActivationFunc {
     STEP_FUNC,
     TANH_FUNC,
-    ABS_SIG_FUNC,
     GAUSSIAN_FUNC,
     FUNC_SENTINEL,
+    ABS_SIG_FUNC,
 };
 
 std::string activationFuncName(ActivationFunc f);
@@ -67,12 +67,11 @@ struct Node {
     int outdegree;
     double bias;
     
-    double threshold = 0.5;
+    double threshold = 0.0;
     double activatedVal = 1.0;
-    double deactivatedVal = 1.0;
+    double deactivatedVal = -1.0;
     Node():indegree(0), outdegree(0), bias(0){
-        type = STEP_FUNC;
-       // type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
+        type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
     };
 };
 
@@ -100,14 +99,17 @@ public:
     void addGeneFromParentSystem(BasicNN parent, Edge gene);
     std::vector<Edge> connectionGenome();
     
-    int differingNodes(BasicNN other);
+    double nodeDifference(BasicNN other);
     
     void updateInnovationNumber(const Edge &info);
 
     void mutateConnectionWeight();
     void mutateNode(long n);
-    std::pair<Edge, Edge> insertNode();
+    std::vector<Edge> insertNode();
     Edge createConnection();
+    
+    double weightThreshold = 0.1; // if absolute value of weight is less than this, disconnect the edge
+                            // allows for decay
     
 #pragma mark - End of necessary methods
     // simulate the network for evaluation
@@ -126,11 +128,14 @@ private:
     std::set<long> inputNodes;
     std::set<long> outputNodes;
     
-    std::pair<Edge, Edge> insertNodeOnEdge(Edge &e);
+    std::vector<Edge> insertNodeOnEdge(Edge &e);
     
     // helpers for simulation
     std::vector<double> nodeOuputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs);
     std::vector<Edge> inputsToNode(long n);
+    std::vector<Edge> outputsFromNode(long n);
+    
+    std::vector<Edge>  insertNodeAsNode(int n);
 };
 
 #endif /* defined(__NEATBox__BaseNetwork__) */

@@ -82,8 +82,8 @@ double parityEvaluation(BasicNN& individual)
     inVals.push_back({1,1,0});
     inVals.push_back({1,1,1});
     
-    int maxSteps = 30;
-    std::array<double, numCases> expectedOutput = {0, 1, 1 ,0,1,0,0,1};
+    int maxSteps = 50;
+    std::array<double, numCases> expectedOutput = {1, -1, -1 ,1,-1,1,1,-1};
     std::array<double, numCases> actualOutput;
     double diff = 0.0;
     for (int i=0; i<numCases; i++) {
@@ -95,8 +95,8 @@ double parityEvaluation(BasicNN& individual)
         diff += fabs(d);
         
         // penalize unstable networks
-        if (!eval.steady)
-            diff += 1.0;
+       // if (!eval.steady)
+        //    diff += 1.0;
         
         // diff += (double)eval.steps/maxSteps;
     }
@@ -107,5 +107,5 @@ double parityEvaluation(BasicNN& individual)
 
 bool parityFitnessSatisfied(double bestFitness)
 {
-    return bestFitness > (4*numCases*numCases)*0.9; //90% fitness
+    return bestFitness >= (4*numCases*numCases);
 }
