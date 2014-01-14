@@ -32,8 +32,8 @@ std::string activationFuncName(ActivationFunc f)
   //  std::ostringstream name;
     std::string name;
     switch (f) {
-        case ABS_SIG_FUNC:
-            name = "|x| SIGMOID";
+        case SIN_FUNC:
+            name = "SIN";
             break;
         case GAUSSIAN_FUNC:
             name = "GAUSSIAN";
@@ -383,8 +383,8 @@ static double applyActivationFunc(Node n, double inputSum)
         case TANH_FUNC:
             output = tanh(inputSum);
             break;
-        case ABS_SIG_FUNC:
-            output = 1.0/(1 + fabs(inputSum));
+        case SIN_FUNC:
+            output = sin(inputSum);
             break;
         case GAUSSIAN_FUNC:
             output = 2*exp(-inputSum*inputSum) - 1;

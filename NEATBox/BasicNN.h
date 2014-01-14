@@ -18,8 +18,8 @@ enum ActivationFunc {
     STEP_FUNC,
     TANH_FUNC,
     GAUSSIAN_FUNC,
+    SIN_FUNC,
     FUNC_SENTINEL,
-    ABS_SIG_FUNC,
 };
 
 std::string activationFuncName(ActivationFunc f);

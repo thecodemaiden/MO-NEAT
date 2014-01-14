@@ -34,8 +34,8 @@ NEATPlusAlgorithm <IndividualType, InnovationType>::~NEATPlusAlgorithm()
     //empty the species lists
     typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
-        std::vector<SystemInfo<IndividualType> > members = speciesIterator->members;
-        typename std::vector<SystemInfo<IndividualType> >::iterator it = members.begin();
+        std::vector<SystemInfo<IndividualType> *> members = speciesIterator->members;
+        typename std::vector<SystemInfo<IndividualType> *>::iterator it = members.begin();
         while (it != members.end()) {
             it = members.erase(it);
         }
@@ -47,9 +47,9 @@ NEATPlusAlgorithm <IndividualType, InnovationType>::~NEATPlusAlgorithm()
 
 // return true if sys1 comes before sys2
 template <class IndividualType>
-static bool compareIndividuals(const SystemInfo<IndividualType> sys1, const SystemInfo<IndividualType> sys2)
+static bool compareIndividuals(SystemInfo<IndividualType> *sys1, SystemInfo<IndividualType> *sys2)
 {
-    return sys1.fitness > sys2.fitness;
+    return sys1->fitness > sys2->fitness;
 }
 
 template <class InnovationType>
@@ -62,10 +62,10 @@ template <class IndividualType, class InnovationType>
 IndividualType NEATPlusAlgorithm <IndividualType, InnovationType>::combineSystems(IndividualType &sys1, IndividualType &sys2)
 {
     
-    if (&sys1 == &sys2) {
-        // breeding with myself?
-        return IndividualType(sys1);
-    }
+//    if (&sys1 == &sys2) {
+//        // breeding with myself?
+//        return IndividualType(sys1);
+//    }
     
     IndividualType newChild = createInitialIndividual();
     std::vector<InnovationType> genome1 = sys1.connectionGenome();
@@ -121,11 +121,11 @@ void NEATPlusAlgorithm <IndividualType, InnovationType>::spawnNextGeneration()
     std::vector<SystemInfo<IndividualType> >newGeneration;
     
     do {
-        std::pair<SystemInfo<IndividualType> , SystemInfo<IndividualType> > p = selectParents(sharedFitnessSum);
-        SystemInfo<IndividualType> p1 = p.first;
-        SystemInfo<IndividualType> p2 = p.second;
+        std::pair<SystemInfo<IndividualType> *, SystemInfo<IndividualType> *> p = selectParents(sharedFitnessSum);
+        SystemInfo<IndividualType> *p1 = (p.first);
+        SystemInfo<IndividualType> *p2 = (p.second);
         
-        IndividualType child = combineSystems(p1.individual, p2.individual);
+        IndividualType child = combineSystems(p1->individual, p2->individual);
         // mutate the new individual (maybe)
         mutateSystem(child);
         
@@ -167,17 +167,17 @@ NEATSpecies<IndividualType> NEATPlusAlgorithm<IndividualType, InnovationType>::c
 }
 
 template <class IndividualType, class InnovationType>
-std::pair<SystemInfo<IndividualType>, SystemInfo<IndividualType> > NEATPlusAlgorithm <IndividualType, InnovationType>::selectParents(double  fitnessSum)
+std::pair<SystemInfo<IndividualType>*, SystemInfo<IndividualType>* > NEATPlusAlgorithm <IndividualType, InnovationType>::selectParents(double  fitnessSum)
 {
     NEATSpecies<IndividualType> breedingSpecies = chooseBreedingSpecies(fitnessSum);
   
-        std::vector<SystemInfo<IndividualType> >individuals = breedingSpecies.members;
+        std::vector<SystemInfo<IndividualType> *>individuals = breedingSpecies.members;
         
-        SystemInfo<IndividualType> parent1 = (individuals[0]);
-        SystemInfo<IndividualType> parent2 = (individuals[0]);
+        SystemInfo<IndividualType> *parent1 = (individuals[0]);
+        SystemInfo<IndividualType> *parent2 = (individuals[0]);
     
          int parentPosition = arc4random_uniform(individuals.size());
-            parent1 = SystemInfo<IndividualType>(individuals[parentPosition]);
+            parent1 = (individuals[parentPosition]);
     
     double interspecies_mate = (double)rand()/RAND_MAX;
     if (stagnantGenerations > maxStagnation/2 || interspecies_mate < 0.05) {
@@ -185,7 +185,7 @@ std::pair<SystemInfo<IndividualType>, SystemInfo<IndividualType> > NEATPlusAlgor
         individuals = breedingSpecies.members;
 
         int parentPosition = arc4random_uniform(individuals.size());
-        parent2 = SystemInfo<IndividualType>(individuals[parentPosition]);
+        parent2 = (individuals[parentPosition]);
     } else
         if (individuals.size() > 1) {
    
@@ -193,12 +193,9 @@ std::pair<SystemInfo<IndividualType>, SystemInfo<IndividualType> > NEATPlusAlgor
             do {
                 parentPosition2 = arc4random_uniform(individuals.size());
             } while (parentPosition2 == parentPosition);
-            parent2 = SystemInfo<IndividualType>(individuals[parentPosition2]);
+            parent2 = (individuals[parentPosition2]);
         }
-
-        return std::pair<SystemInfo<IndividualType> , SystemInfo<IndividualType> >(parent1, parent2);
-    
-    
+        return std::pair<SystemInfo<IndividualType>* , SystemInfo<IndividualType>* >(parent1, parent2);
 }
 
 
@@ -216,7 +213,7 @@ void NEATPlusAlgorithm <IndividualType, InnovationType>::speciate()
             double  distance = genomeDistance(populationIter->individual, *speciesIterator->representative);
             if (fabs(distance) < d_threshold) {
                 added = true;
-                speciesIterator->members.push_back(*populationIter);
+                speciesIterator->members.push_back(&(*populationIter));
                 break;
             }
             speciesIterator++;
@@ -226,7 +223,7 @@ void NEATPlusAlgorithm <IndividualType, InnovationType>::speciate()
             // new species!!
             NEATSpecies<IndividualType> s = NEATSpecies<IndividualType>();
             s.representative = new IndividualType(populationIter->individual);
-            s.members.push_back(*populationIter);
+            s.members.push_back(&(*populationIter));
             speciesList.push_back(s);
             s.speciesNumber = nextSpeciesNumber++;
         }
@@ -248,13 +245,13 @@ void NEATPlusAlgorithm <IndividualType, InnovationType>::speciate()
     typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
         // pick a new rep
-        std::vector<SystemInfo<IndividualType> > &members = speciesIterator->members;
+        std::vector<SystemInfo<IndividualType> *> members = speciesIterator->members;
         if (members.size() == 0) {
             NEATSpecies<IndividualType> extinctSpecies = *speciesIterator;
             speciesIterator = speciesList.erase(speciesIterator);
         } else {
             int index = arc4random_uniform(members.size());
-            IndividualType rep = (members[index].individual);
+            IndividualType rep = (members[index]->individual);
             delete speciesIterator->representative;
             speciesIterator->representative = new IndividualType(rep);
             
@@ -262,10 +259,10 @@ void NEATPlusAlgorithm <IndividualType, InnovationType>::speciate()
             
             // update the fitnesses
             double  totalFitness = 0.0;
-            typename std::vector<SystemInfo<IndividualType> >::iterator memberIterator = members.begin();
+            typename std::vector<SystemInfo<IndividualType> *>::iterator memberIterator = members.begin();
             while (memberIterator != members.end()) {
-                memberIterator->fitness /= members.size();
-                totalFitness += memberIterator->fitness;
+                (*memberIterator)->fitness /= members.size();
+                totalFitness += (*memberIterator)->fitness;
                 memberIterator++;
             }
             speciesIterator->totalSharedFitness = totalFitness;
@@ -357,11 +354,11 @@ double  NEATPlusAlgorithm <IndividualType, InnovationType>::genomeDistance( Indi
     double diff_node = sys1.nodeDifference(sys2);
     long moreNodes = std::min(sys1.numberOfNodes(), sys2.numberOfNodes());
     
-//    double  d = w_disjoint*nDisjoint/longerSize + w_excess*nExcess/longerSize + w_matching*matchingDiff/nMatching;
+    double  d = w_disjoint*nDisjoint/longerSize + w_excess*nExcess/longerSize + w_matching*matchingDiff/nMatching;
 
-    double  d = w_disjoint*nDisjoint + w_excess*nExcess + w_matching*matchingDiff;
+//    double  d = w_disjoint*nDisjoint + w_excess*nExcess + w_matching*matchingDiff;
     
-    d+= + w_matching_node*diff_node/moreNodes;
+  //  d+= + w_matching_node*diff_node/moreNodes;
     
     //assert(!isUnreasonable(d));
     return d;
@@ -425,7 +422,7 @@ bool NEATPlusAlgorithm <IndividualType, InnovationType>::tick()
         
         double  proportionToSave = (speciesIterator->totalSharedFitness)/sharedFitnessSum;
         int numToSave = std::min((int)(proportionToSave*populationSize), (int)numMembers);
-        numToSave = std::max(numToSave, 1); // save 1 of each species
+      //  numToSave = std::max(numToSave, 1); // save 1 of each species
         std::sort(speciesIterator->members.begin(), speciesIterator->members.end(), compareIndividuals<IndividualType>);
         
         // don't let population grow unchecked
@@ -436,16 +433,16 @@ bool NEATPlusAlgorithm <IndividualType, InnovationType>::tick()
         
         
         for (int j=0; j<numToSave; j++) {
-            SystemInfo<IndividualType> individual = speciesIterator->members[j];
-            double  rawFitness = individual.fitness * numMembers;
+            SystemInfo<IndividualType> *individual = speciesIterator->members[j];
+            double  rawFitness = individual->fitness * numMembers;
             if (rawFitness > bestFitness) {
                 bestFitness = rawFitness;
-                _bestIndividual = new IndividualType(individual.individual);
+                _bestIndividual = new IndividualType(individual->individual);
             }
-            individualsToSave.push_back(individual);
+            individualsToSave.push_back(*individual);
         }
         
-        typename std::vector<SystemInfo<IndividualType> >::iterator deleteIt =  speciesIterator->members.begin()+numToSave;
+        typename std::vector<SystemInfo<IndividualType> *>::iterator deleteIt =  speciesIterator->members.begin()+numToSave;
         while (deleteIt !=  speciesIterator->members.end()) {
             deleteIt =  speciesIterator->members.erase(deleteIt);
         }
@@ -582,22 +579,22 @@ void NEATPlusAlgorithm <IndividualType, InnovationType>::logPopulationStatistics
     typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIter = speciesList.begin();
     
     while (speciesIter != speciesList.end()) {
-        std::vector<SystemInfo<IndividualType> >members = speciesIter->members;
+        std::vector<SystemInfo<IndividualType> *>members = speciesIter->members;
         size_t n = members.size();
         currentLogFile << speciesIter->speciesNumber << " ";
         currentLogFile << n << " ";
-        SystemInfo<IndividualType> best = members.front();
-        currentLogFile << best.fitness*n << " ";
-        SystemInfo<IndividualType> worst = members.back();
-        currentLogFile << worst.fitness*n << " ";
+        SystemInfo<IndividualType> *best = members.front();
+        currentLogFile << best->fitness*n << " ";
+        SystemInfo<IndividualType> *worst = members.back();
+        currentLogFile << worst->fitness*n << " ";
         double  meanFitness =speciesIter->totalSharedFitness;
         currentLogFile << meanFitness << " ";
         // standard dev - from http://stackoverflow.com/questions/7616511/calculate-mean-and-standard-deviation-from-a-vector-of-samples-in-c-using-boos
         
         double  sq_sum = 0;
-        typename std::vector<SystemInfo<IndividualType> >::iterator it = members.begin();
+        typename std::vector<SystemInfo<IndividualType> *>::iterator it = members.begin();
         while (it != members.end()) {
-            sq_sum += (it->fitness - meanFitness)*(it->fitness - meanFitness);
+            sq_sum += ((*it)->fitness - meanFitness)*((*it)->fitness - meanFitness);
             it++;
         }
         

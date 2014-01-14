@@ -31,7 +31,7 @@ class NEATSpecies {
 public:
 // each generation the members are cleared out, repopulated, and the representative is updated
     IndividualType *representative;
-    std::vector<SystemInfo<IndividualType> >members;
+    std::vector<SystemInfo<IndividualType> *>members;
     double totalSharedFitness;
     int speciesNumber; // for data collection
 };
@@ -59,7 +59,7 @@ protected:
 
     virtual IndividualType combineSystems(IndividualType &sys1, IndividualType &sys2); // assumes the fitter individual is first
     virtual double genomeDistance( IndividualType& sys1,  IndividualType& sys2);
-    virtual std::pair<SystemInfo<IndividualType>, SystemInfo<IndividualType> > selectParents(double fitnessSum);
+    virtual std::pair<SystemInfo<IndividualType>*, SystemInfo<IndividualType>* > selectParents(double fitnessSum);
     virtual void assignInnovationNumberToAttachment(IndividualType& individual, InnovationType i);
 
     
