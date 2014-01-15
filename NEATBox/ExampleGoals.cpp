@@ -90,9 +90,16 @@ double parityEvaluation(BasicNN& individual)
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
         SimReturn eval =
         individual.simulateTillEquilibrium(input, maxSteps);
-        actualOutput[i] = eval.outputs.front();
-        double d = expectedOutput[i] - eval.outputs.front();
+        
+        double v = eval.outputs.front();
+        
+        actualOutput[i] = v;
+        double d = expectedOutput[i] - v;
         diff += fabs(d);
+        
+        if (v == -INFINITY) {
+            fprintf(stderr, "WOOOOOAK");
+        }
         
         // penalize unstable networks
        // if (!eval.steady)

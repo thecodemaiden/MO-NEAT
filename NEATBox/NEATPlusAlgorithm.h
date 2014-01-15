@@ -59,7 +59,7 @@ protected:
 
     virtual IndividualType combineSystems(IndividualType &sys1, IndividualType &sys2); // assumes the fitter individual is first
     virtual double genomeDistance( IndividualType& sys1,  IndividualType& sys2);
-    virtual std::pair<SystemInfo<IndividualType>*, SystemInfo<IndividualType>* > selectParents(double fitnessSum);
+
     virtual void assignInnovationNumberToAttachment(IndividualType& individual, InnovationType i);
 
     
@@ -67,7 +67,7 @@ protected:
     virtual void prepareInitialPopulation();
         
     void logPopulationStatistics();
-    NEATSpecies<IndividualType> chooseBreedingSpecies(double totalFitness);
+    NEATSpecies<IndividualType> &chooseBreedingSpecies(double totalFitness);
 public:
     NEATPlusAlgorithm(int populationSize, int maxGenerations, int maxStagnation);
     ~NEATPlusAlgorithm();
@@ -110,6 +110,7 @@ private:
     int nextInnovationNumber;
     int nextSpeciesNumber;
     void speciate(); // divide everything into species
+    void updateSharedFitnesses();
 };
 
 
