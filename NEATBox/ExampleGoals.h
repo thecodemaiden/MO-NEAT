@@ -13,13 +13,13 @@
 #include "BasicNN.h"
 
 
-double dummyEvaluation(BasicNN& individual);
+double dummyEvaluation(BasicNN *individual);
 bool goodEnoughDummyFitness(double bestFitness);
 
-double xorEvaluation(BasicNN& individual);
+double xorEvaluation(BasicNN *individual);
 bool xorFitnessSatisfied(double bestFitness);
 
-double parityEvaluation(BasicNN& individual);
+double parityEvaluation(BasicNN *individual);
 bool parityFitnessSatisfied(double bestFitness);
 
 #endif /* defined(__NEATBox__ExampleGoals__) */

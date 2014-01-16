@@ -20,10 +20,13 @@
 
 template <class IndividualType>
 struct SystemInfo {
-    IndividualType individual;
+    IndividualType *individual;
     double fitness;
     
-    SystemInfo(IndividualType i):individual(i) { fitness = -INFINITY;}
+    SystemInfo(IndividualType *i):individual(i) { fitness = -INFINITY;}
+    ~SystemInfo() {
+        delete individual;
+    }
 };
 
 template <class IndividualType>
@@ -40,7 +43,7 @@ template <class IndividualType, class InnovationType>
 class NEATPlusAlgorithm {
 protected:
     std::vector<InnovationType> newConnections;
-    std::vector<SystemInfo<IndividualType> > population;
+    std::vector<SystemInfo<IndividualType> *> population;
     std::vector<NEATSpecies<IndividualType> >speciesList;
 
     int populationSize;
@@ -55,19 +58,19 @@ protected:
  
     void spawnNextGeneration(); // recombine species to get enough children then mutate each one
 
-    void mutateSystem(IndividualType& original); // does not make a copy
+    void mutateSystem(IndividualType  *original); // does not make a copy
 
-    virtual IndividualType combineSystems(IndividualType &sys1, IndividualType &sys2); // assumes the fitter individual is first
-    virtual double genomeDistance( IndividualType& sys1,  IndividualType& sys2);
+    virtual IndividualType *combineSystems(SystemInfo<IndividualType> *sys1, SystemInfo<IndividualType> *sys2);
+    virtual double genomeDistance( IndividualType *sys1,  IndividualType *sys2);
 
-    virtual void assignInnovationNumberToAttachment(IndividualType& individual, InnovationType i);
+    virtual void assignInnovationNumberToAttachment(IndividualType *individual, InnovationType i);
 
     
     // overriden functions cannot be called in constructors, so this is called on the first tick();
     virtual void prepareInitialPopulation();
         
     void logPopulationStatistics();
-    NEATSpecies<IndividualType> &chooseBreedingSpecies(double totalFitness);
+    NEATSpecies<IndividualType> &chooseBreedingSpecies(double totalFitness); // fitness proportionate selection
 public:
     NEATPlusAlgorithm(int populationSize, int maxGenerations, int maxStagnation);
     ~NEATPlusAlgorithm();
@@ -76,9 +79,9 @@ public:
     bool tick();
 #pragma mark - Function pointers - MUST BE SET OR ELSE
     // please set these
-    double (*evaluationFunc)(IndividualType& individual); // provide a fitness for each individual
+    double (*evaluationFunc)(IndividualType  *individual); // provide a fitness for each individual
     bool (*stopFunc)(double bestFitness); // set a stopping fitness
-    IndividualType (*createInitialIndividual)(void); // the smallest/starting individual
+    IndividualType *(*createInitialIndividual)(void); // the smallest/starting individual
 #pragma mark - 
     
     IndividualType *bestIndividual();

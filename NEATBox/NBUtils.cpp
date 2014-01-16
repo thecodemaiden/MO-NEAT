@@ -8,6 +8,7 @@
 
 #include "NBUtils.h"
 #include <cmath>
+#include <assert.h>
 double normallyDistributed(double mean, double sd)
 {
     static double n2 = 0.0;
@@ -32,4 +33,17 @@ double normallyDistributed(double mean, double sd)
         n2_cached = 0;
         return n2*sd + mean;
     }
+}
+
+long uniformlyDistributed(long upperBound)
+{
+    double choice = (double)rand()/RAND_MAX;
+    long l = (long)(choice * upperBound);
+    return l;
+}
+
+
+bool isUnreasonable(double d)
+{
+    return fabs(d) == INFINITY || isnan(d);
 }

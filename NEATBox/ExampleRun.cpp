@@ -1,4 +1,4 @@
-//
+ //
 //  ExampleRun.cpp
 //  NEATBox
 //
@@ -14,14 +14,14 @@
 #include "NEATPlusAlgorithm.cpp"
 template class NEATPlusAlgorithm<BasicNN,Edge>;
 
-BasicNN createXorNetwork()
+BasicNN *createXorNetwork()
 {
-    return BasicNN(2,1);
+    return new BasicNN(2,1);
 }
 
-BasicNN createParityNetwork()
+BasicNN *createParityNetwork()
 {
-    return BasicNN(3,1);
+    return new BasicNN(3,1);
 }
 
 void runExample()
@@ -45,9 +45,9 @@ void runExample()
     
     while (!algo.tick());
     BasicNN *winner = algo.bestIndividual();
-    std::cout << winner->display();
+    std::cout << winner->dotFormat();
     std::cout << "Solution found in " << algo.getNumberOfIterations() << " generations.\n";
     
    // xorEvaluation(*winner);
-    parityEvaluation(*winner);
+    parityEvaluation(winner);
 }

@@ -13,4 +13,8 @@
 
 double normallyDistributed(double mean=0, double sd = 1);
 
+// if both are given, the first is a lower bound and the second is an upper bound
+// else
+long uniformlyDistributed(long upperBound);
+bool isUnreasonable(double d);
 #endif /* defined(__NEATBox__NBUtils__) */

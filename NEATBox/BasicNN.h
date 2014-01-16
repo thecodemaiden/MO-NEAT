@@ -107,16 +107,16 @@ public:
     void mutateNode(long n);
     std::vector<Edge> insertNode();
     Edge createConnection();
-    
-    double weightThreshold = 0.1; // if absolute value of weight is less than this, disconnect the edge
                             // allows for decay
     
 #pragma mark - End of necessary methods
+    
     // simulate the network for evaluation
     // we can create recurrent networks, and we usually want them to settle
     SimReturn simulateTillEquilibrium(std::vector<double> inputValues, int maxSteps);
     
     std::string display();
+    std::string dotFormat(std::string graphName="BasicNN");
     
     long numberOfNodes();
     long numberOfEdges();
@@ -136,6 +136,7 @@ private:
     std::vector<Edge> outputsFromNode(long n);
     
     std::vector<Edge>  insertNodeAsNode(int n);
+
 };
 
 #endif /* defined(__NEATBox__BaseNetwork__) */

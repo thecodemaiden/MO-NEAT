@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <sstream>
 #include <cmath>
+#include <assert.h>
 
 // locate incoming and outgoing edges for a node number
 
@@ -101,6 +102,11 @@ void BasicNN::addGeneFromParentSystem(BasicNN parent, Edge gene)
         nodes.at(gene.nodeFrom).outdegree++;
         nodes.at(gene.nodeTo).indegree++;
     }
+    
+    for(std::set<long>::iterator it = outputNodes.begin(); it!=outputNodes.end(); it++) {
+        assert(nodes[*it].indegree > 0);
+    }
+    
 }
 
 static bool compareInnovationNumbers(const Edge &e1, const Edge &e2)
@@ -302,34 +308,6 @@ double BasicNN::nodeDifference(BasicNN other)
     return d;
 }
 
-
-std::string BasicNN::display()
-{
-    // sort the edges by source node and display
-    
-    std::ostringstream ss;
-    std::sort(edges.begin(), edges.end());
-    
-    std::vector<Edge>::iterator it = edges.begin();
-    for (; it != edges.end(); it++) {
-        ss << it->nodeFrom << " -> " << it->nodeTo << ": " << it->weight;
-        if (it->disabled)
-            ss << " (disabled)";
-        ss << "\n";
-    }
-    
-    // display the nodes too
-    for (int i=0; i<nodes.size(); i++) {
-        Node n = nodes[i];
-        ss << i << ": " << activationFuncName(n.type);
-        if (n.type == STEP_FUNC)
-            ss << " T: " << n.threshold;
-        ss << " B: " << n.bias << "\n";
-    }
-    
-    return ss.str();
-}
-
 long BasicNN::numberOfNodes()
 {
     return nodes.size();
@@ -422,6 +400,7 @@ static double applyActivationFunc(Node n, double inputSum)
             inputSum += (inputs[inputNodeN++]);
         }
         double output = applyActivationFunc(n, inputSum);
+        assert(!isUnreasonable(output));
         
         newOutputs.push_back(output);
     }
@@ -456,4 +435,88 @@ std::vector<Edge> BasicNN::outputsFromNode(long n)
         found.push_back(*it);
     }
     return found;
+}
+
+std::string BasicNN::display()
+{
+    // sort the edges by source node and display
+    
+    std::ostringstream ss;
+    std::sort(edges.begin(), edges.end());
+    
+    std::vector<Edge>::iterator it = edges.begin();
+    for (; it != edges.end(); it++) {
+        ss << it->nodeFrom << " -> " << it->nodeTo << ": " << it->weight;
+        if (it->disabled)
+            ss << " (disabled)";
+        ss << "\n";
+    }
+    
+    // display the nodes too
+    for (int i=0; i<nodes.size(); i++) {
+        Node n = nodes[i];
+        ss << i << ": " << activationFuncName(n.type);
+        if (n.type == STEP_FUNC)
+            ss << " T: " << n.threshold;
+        ss << " B: " << n.bias << "\n";
+    }
+    
+    return ss.str();
+}
+
+std::string BasicNN::dotFormat(std::string graphName)
+{
+    std::ostringstream ss;
+
+    ss << "digraph " << graphName << "{\n" ;
+    ss << "rankdir=LR;\n";
+    ss << "center=true;\n";
+    ss << "orientation=landscape;\n";
+    
+    ss << "{rank=source;\n";
+    int i = 0;
+    for (std::set<long>::iterator it = inputNodes.begin(); it != inputNodes.end(); it++, i++) {
+        ss << "\tin_" << i <<";\n";
+    }
+    ss << "}\n\n";
+    
+    i=0;
+    for (std::set<long>::iterator it = inputNodes.begin(); it != inputNodes.end(); it++, i++) {
+        ss << "\tin_" << i << " -> " << *it <<";\n";
+    }
+    
+    ss << "{rank=sink;\n";
+    i = 0;
+    for (std::set<long>::iterator it = outputNodes.begin(); it != outputNodes.end(); it++, i++) {
+        ss << "\t" << "out_" << i << ";\n";
+    }
+    ss <<"}\n\n";
+    
+    i=0;
+    for (std::set<long>::iterator it = outputNodes.begin(); it != outputNodes.end(); it++, i++) {
+        ss << "\t" << *it << " -> " << "out_" << i << ";\n";
+    }
+    
+    for (long j = 0; j<nodes.size(); j++) {
+        Node n = nodes[i];
+        ss << j << " [label = \"" << activationFuncName(nodes[j].type) << "\"];\n";
+        if (n.bias != 0) {
+            ss << "b_" << j << " -> " << j << " [label = \"" << n.bias <<"\"];\n";
+        }
+        ss << "\n";
+    }
+    
+    for (long j=0; j<edges.size(); j++) {
+        Edge e = edges[j];
+        ss << e.nodeFrom << " -> " << e.nodeTo << " [label =\"" << e.weight << "\"";
+        if (e.disabled) {
+            ss << ", style=dotted";
+        }
+        ss << "];\n";
+    }
+    
+    ss <<"}\n";
+    
+    
+    return ss.str();
 }

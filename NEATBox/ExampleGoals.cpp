@@ -11,17 +11,17 @@
 #include <array>
 #include <cmath>
 
-double dummyEvaluation(BasicNN& individual)
+double dummyEvaluation(BasicNN *individual)
 {
     SimReturn eval =
-    individual.simulateTillEquilibrium(std::vector<double>(), 10);
+    individual->simulateTillEquilibrium(std::vector<double>(), 10);
     
     for (long i=0; i<eval.outputs.size(); i++) {
         std::cout <<"\t" << i << ": " << eval.outputs[i] <<"\n";
     }
     std::cout << "\tsteady: " << (eval.steady ? "y" : "n") << "\n";
     
-    return individual.numberOfEdges();
+    return individual->numberOfEdges();
 }
 
 bool goodEnoughDummyFitness(double bestFitness)
@@ -69,7 +69,7 @@ bool xorFitnessSatisfied(double bestFitness)
 
 
 const int numCases = 8;
-double parityEvaluation(BasicNN& individual)
+double parityEvaluation(BasicNN *individual)
 {
     std::vector<std::array<double, 3> > inVals;
     
@@ -89,17 +89,14 @@ double parityEvaluation(BasicNN& individual)
     for (int i=0; i<numCases; i++) {
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
         SimReturn eval =
-        individual.simulateTillEquilibrium(input, maxSteps);
+        individual->simulateTillEquilibrium(input, maxSteps);
         
         double v = eval.outputs.front();
         
         actualOutput[i] = v;
         double d = expectedOutput[i] - v;
         diff += fabs(d);
-        
-        if (v == -INFINITY) {
-            fprintf(stderr, "WOOOOOAK");
-        }
+    
         
         // penalize unstable networks
        // if (!eval.steady)
