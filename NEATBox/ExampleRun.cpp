@@ -41,7 +41,7 @@ void runExample()
     algo.w_matching = 2.0;
     algo.w_matching_node = 3.0;
     
-    algo.d_threshold = 10.0;
+    algo.d_threshold = 3.0;
     
     while (!algo.tick());
     BasicNN *winner = algo.bestIndividual();

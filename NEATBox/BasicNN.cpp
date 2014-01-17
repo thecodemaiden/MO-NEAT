@@ -147,10 +147,12 @@ std::vector<Edge> BasicNN::insertNode()
     bool insertNormal = true;
     if (insertNormal) {
         uint pos;
-        pos = arc4random_uniform((uint)edges.size());
-        
+        do {
+            pos = arc4random_uniform((uint)edges.size());
+            
+        } while (edges.at(pos).disabled);
         Edge &toSplit = edges.at(pos);
-        
+
         return insertNodeOnEdge(toSplit);
     } else {
         uint pos;
@@ -469,9 +471,10 @@ std::string BasicNN::dotFormat(std::string graphName)
     std::ostringstream ss;
 
     ss << "digraph " << graphName << "{\n" ;
-    ss << "rankdir=LR;\n";
-    ss << "center=true;\n";
-    ss << "orientation=landscape;\n";
+    ss << "size=\"7.75,10.75\";\n";
+    ss << "\trankdir=LR;\n";
+    ss << "\tcenter=true;\n";
+    ss << "\torientation=landscape;\n";
     
     ss << "{rank=source;\n";
     int i = 0;
@@ -499,16 +502,16 @@ std::string BasicNN::dotFormat(std::string graphName)
     
     for (long j = 0; j<nodes.size(); j++) {
         Node n = nodes[i];
-        ss << j << " [label = \"" << activationFuncName(nodes[j].type) << "\"];\n";
+        ss << "\t" << j << "[label = \"" << activationFuncName(nodes[j].type) << "\"];\n";
         if (n.bias != 0) {
-            ss << "b_" << j << " -> " << j << " [label = \"" << n.bias <<"\"];\n";
+            ss << "\tb_" << j << " -> " << j << " [label = \"" << n.bias <<"\"];\n";
         }
         ss << "\n";
     }
     
     for (long j=0; j<edges.size(); j++) {
         Edge e = edges[j];
-        ss << e.nodeFrom << " -> " << e.nodeTo << " [label =\"" << e.weight << "\"";
+        ss << "\t" << e.nodeFrom << " -> " << e.nodeTo << " [label =\"" << e.weight << "\"";
         if (e.disabled) {
             ss << ", style=dotted";
         }

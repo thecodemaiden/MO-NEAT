@@ -99,10 +99,10 @@ double parityEvaluation(BasicNN *individual)
     
         
         // penalize unstable networks
-       // if (!eval.steady)
+        //if (!eval.steady)
         //    diff += 1.0;
         
-        // diff += (double)eval.steps/maxSteps;
+         diff += (double)eval.steps/maxSteps;
     }
     
     
