@@ -479,14 +479,32 @@ bool NEATPlusAlgorithm <IndividualType, InnovationType>::tick()
         }
     }
     
-   // if (first_run)
-        speciate(); // later on we stay in our parents' species! OOOOH
+    //   if (first_run) {
+    speciate();
+//  }else{
+    
+//    bool regroup = false;
+//    if (speciesList.size() < 10 || stagnantGenerations > maxStagnation/5) {
+//        regroup = true;
+//        d_threshold /= 1.05;
+//    }
+//    
+//    if (speciesList.size() > 20) {
+//        regroup = true;
+//        d_threshold *= 1.05;
+//    }
+//    
+//    if (regroup) {
+//        // empty the species member lists
+//        speciesList.clear();
+//    }
+//    
+//    if (first_run || regroup)
+//        speciate(); // later on we stay in our parents' species! OOOOH
 
-  //  std::cout << "Pre update: "<< speciesList.front().members.size() << "\n";
     
     updateSharedFitnesses();
 
- //   std::cout << "Pre separation" << speciesList.front().members.size() << "\n";
 
     
     double  bestFitness = -INFINITY; // we want zero fitness
@@ -568,7 +586,6 @@ bool NEATPlusAlgorithm <IndividualType, InnovationType>::tick()
  
         }
         
-    //    std::cout << "post separation " << speciesList.front().members.size() << "\n";
 
         
     }
@@ -593,7 +610,7 @@ bool NEATPlusAlgorithm <IndividualType, InnovationType>::tick()
     
     lastBestFitness = bestFitness;
     
-    bool stop =  (generations >= maxGenerations) || (stopFunc && stopFunc(bestFitness)) ;//|| stagnantGenerations > maxStagnation;
+    bool stop =  (generations >= maxGenerations) || (stopFunc && stopFunc(bestFitness)) || stagnantGenerations > maxStagnation;
     logPopulationStatistics();
     
     // empty the innovation list before spawning more
@@ -604,26 +621,6 @@ bool NEATPlusAlgorithm <IndividualType, InnovationType>::tick()
     } else {
         spawnNextGeneration();
     }
-    
-  
-//    bool regroup = false;
-//    if (speciesList.size() < 10 || stagnantGenerations > maxStagnation/5) {
-//        regroup = true;
-//        d_threshold /= 1.05;
-//    }
-//    
-//    if (speciesList.size() > 20) {
-//        regroup = true;
-//        d_threshold *= 1.05;
-//    }
-//    
-//    if (regroup) {
-        // empty the species member lists
-//        speciesList.clear();
- //       speciate();
-//    }
-    
-    
     
     
     

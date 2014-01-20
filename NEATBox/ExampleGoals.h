@@ -22,4 +22,7 @@ bool xorFitnessSatisfied(double bestFitness);
 double parityEvaluation(BasicNN *individual);
 bool parityFitnessSatisfied(double bestFitness);
 
+double xorWithIndicatorEvaluation(BasicNN *individual);
+bool xorWithIndicatorFitnessSatisfied(double bestFitness);
+
 #endif /* defined(__NEATBox__ExampleGoals__) */

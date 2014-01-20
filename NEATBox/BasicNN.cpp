@@ -23,7 +23,7 @@ private:
 
 struct has_output {
     has_output(long n) : n(n) { }
-    bool operator()(Edge e) const { return e.nodeFrom == n;} // disabled connections count for insertAsNode
+    bool operator()(Edge e) const { return e.nodeFrom == n && !e.disabled;}
 private:
     long n;
 };
@@ -103,9 +103,9 @@ void BasicNN::addGeneFromParentSystem(BasicNN parent, Edge gene)
         nodes.at(gene.nodeTo).indegree++;
     }
     
-    for(std::set<long>::iterator it = outputNodes.begin(); it!=outputNodes.end(); it++) {
-        assert(nodes[*it].indegree > 0);
-    }
+//    for(std::set<long>::iterator it = outputNodes.begin(); it!=outputNodes.end(); it++) {
+//        assert(nodes[*it].indegree > 0);
+//    }
     
 }
 
@@ -134,18 +134,19 @@ void BasicNN::mutateConnectionWeight()
 
 void BasicNN::mutateNode(long n)
 {
-    double var = normallyDistributed();
-    nodes[n].bias = var;
+    double selector = (double)rand()/RAND_MAX;
     
-    ActivationFunc t = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
-    nodes[n].type = t;
+    if (selector < 0.33)
+        nodes[n].bias = normallyDistributed();
+    else if (selector < 0.67)
+        nodes[n].param1 = normallyDistributed(0,2);
+    else
+        nodes[n].type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
 }
 
 
 std::vector<Edge> BasicNN::insertNode()
 {
-    bool insertNormal = true;
-    if (insertNormal) {
         uint pos;
         do {
             pos = arc4random_uniform((uint)edges.size());
@@ -154,12 +155,6 @@ std::vector<Edge> BasicNN::insertNode()
         Edge &toSplit = edges.at(pos);
 
         return insertNodeOnEdge(toSplit);
-    } else {
-        uint pos;
-        pos = arc4random_uniform((uint)nodes.size());
-        
-        return insertNodeAsNode(pos);
-    }
 }
 
 std::vector<Edge> BasicNN::insertNodeOnEdge(Edge &e)
@@ -185,49 +180,50 @@ std::vector<Edge> BasicNN::insertNodeOnEdge(Edge &e)
     return toReturn;
 }
 
-std::vector<Edge>  BasicNN::insertNodeAsNode(int n)
-{
-    Node newNode = Node();
-    Node oldNode = nodes[n];
-    
-    int newNodeNum = (int)nodes.size();
-    
-    Edge bridge = Edge(n, newNodeNum);
-    
-    std::vector<Edge> toReturn;
-
-    // gather the existing outputs from the old node
-    std::vector<Edge> outputEdges = outputsFromNode(n);
-    
-    // add the bridge
-    toReturn.push_back(bridge);
-    edges.push_back(bridge);
-    
-    // now move the existing outputs to the new node
-    for (long i=0; i<outputEdges.size(); i++) {
-        std::vector<Edge>::iterator it = std::find(edges.begin(), edges.end(), outputEdges[i]);
-        it->nodeFrom = newNodeNum;
-        toReturn.push_back(*it);
-    }
-    
-    newNode.outdegree = oldNode.outdegree;
-    oldNode.outdegree = 1;
-    
-    nodes.push_back(newNode);
-    
-    return toReturn;
-}
+//std::vector<Edge>  BasicNN::insertNodeAsNode(int n)
+//{
+//    Node newNode = Node();
+//    Node oldNode = nodes[n];
+//    
+//    int newNodeNum = (int)nodes.size();
+//    
+//    Edge bridge = Edge(n, newNodeNum);
+//    
+//    std::vector<Edge> toReturn;
+//
+//    // gather the existing outputs from the old node
+//    std::vector<Edge> outputEdges = outputsFromNode(n);
+//    
+//    // add the bridge
+//    toReturn.push_back(bridge);
+//    edges.push_back(bridge);
+//    
+//    // now move the existing outputs to the new node
+//    for (long i=0; i<outputEdges.size(); i++) {
+//        std::vector<Edge>::iterator it = std::find(edges.begin(), edges.end(), outputEdges[i]);
+//        it->nodeFrom = newNodeNum;
+//        toReturn.push_back(*it);
+//    }
+//    
+//    newNode.outdegree = oldNode.outdegree;
+//    oldNode.outdegree = 1;
+//    
+//    nodes.push_back(newNode);
+//    
+//    return toReturn;
+//}
 
 
 Edge BasicNN::createConnection()
 {
     // pick two existing, unconnected nodes and connect them - can connect self to self!
-    int maxConnections = (int)(nodes.size()*nodes.size());
-   // int maxConnections = (int)((nodes.size() - 1)*nodes.size());
+    long maxConnections = (nodes.size()*nodes.size());
 
+    long activeEdges = std::count_if(edges.begin(), edges.end(), [](Edge e) {return !e.disabled;});
+    
     Edge newEdge = Edge(-1,-1);
     
-    if (edges.size() < maxConnections) {
+    if (activeEdges < maxConnections) {
         // chose a source node at random
    //     long maxDegree = nodes.size() -1;
         long maxDegree = nodes.size();
@@ -321,6 +317,7 @@ long BasicNN::numberOfEdges()
 }
 
 
+
 SimReturn BasicNN::simulateTillEquilibrium(std::vector<double> inputValues, int maxSteps)
 {
     // ensure that we have the right number of input values
@@ -355,20 +352,23 @@ static double applyActivationFunc(Node n, double inputSum)
     
     switch (n.type) {
         case STEP_FUNC:
-            if (inputSum > n.threshold)
+            if (inputSum > n.param1)
                 output = n.activatedVal;
             else
                 output = n.deactivatedVal;
             break;
         case TANH_FUNC:
-            output = tanh(inputSum);
+            output = tanh(inputSum/exp(n.param1));
             break;
         case SIN_FUNC:
-            output = sin(inputSum);
+            output = sin(inputSum*exp(n.param1));
             break;
         case GAUSSIAN_FUNC:
-            output = 2*exp(-inputSum*inputSum) - 1;
+        {
+            double x = inputSum - n.param1;
+            output = 2*exp(-x*x) - 1;
             break;
+        }
         default:
             output = inputSum;
             break;
@@ -458,8 +458,7 @@ std::string BasicNN::display()
     for (int i=0; i<nodes.size(); i++) {
         Node n = nodes[i];
         ss << i << ": " << activationFuncName(n.type);
-        if (n.type == STEP_FUNC)
-            ss << " T: " << n.threshold;
+            ss << " P: " << n.param1;
         ss << " B: " << n.bias << "\n";
     }
     
@@ -501,10 +500,10 @@ std::string BasicNN::dotFormat(std::string graphName)
     }
     
     for (long j = 0; j<nodes.size(); j++) {
-        Node n = nodes[i];
-        ss << "\t" << j << "[label = \"" << activationFuncName(nodes[j].type) << "\"];\n";
+        Node n = nodes[j];
+        ss << "\t" << j << "[label = \"" << activationFuncName(nodes[j].type) << "\\n" << n.param1 << "\"];\n";
         if (n.bias != 0) {
-            ss << "\tb_" << j << " -> " << j << " [label = \"" << n.bias <<"\"];\n";
+            ss << "\tb_" << j << " -> " << j << " [label = \"" << n.bias <<"\n" <<"\"];\n";
         }
         ss << "\n";
     }

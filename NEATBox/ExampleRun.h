@@ -11,6 +11,7 @@
 
 #include <iostream>
 
-void runExample();
+void runXorExample();
+void runXorIndicatorExample();
 
 #endif /* defined(__NEATBox__ExampleRun__) */

@@ -11,8 +11,8 @@
 int main(int argc, const char * argv[])
 {
 
-    runExample();
-    
+    runXorIndicatorExample();
+  //  runXorExample();
     return 0;
 }
 

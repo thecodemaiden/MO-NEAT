@@ -15,11 +15,12 @@
 #include <set>
 #include "NBUtils.h"
 enum ActivationFunc {
-    STEP_FUNC,
-    TANH_FUNC,
     GAUSSIAN_FUNC,
-    SIN_FUNC,
+    TANH_FUNC,
     FUNC_SENTINEL,
+    STEP_FUNC,
+   SIN_FUNC,
+
 };
 
 std::string activationFuncName(ActivationFunc f);
@@ -67,10 +68,11 @@ struct Node {
     int outdegree;
     double bias;
     
-    double threshold = 0.0;
+    double param1 = 0.0;
+    
     double activatedVal = 1.0;
     double deactivatedVal = -1.0;
-    Node():indegree(0), outdegree(0), bias(0){
+    Node():indegree(0), outdegree(0), bias(0), param1(0){
         type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
     };
 };
@@ -135,8 +137,6 @@ private:
     std::vector<Edge> inputsToNode(long n);
     std::vector<Edge> outputsFromNode(long n);
     
-    std::vector<Edge>  insertNodeAsNode(int n);
-
 };
 
 #endif /* defined(__NEATBox__BaseNetwork__) */
