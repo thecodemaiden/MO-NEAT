@@ -77,12 +77,10 @@ struct Node {
     };
 };
 
-struct SimReturn {
-    std::vector<double>outputs;
-    bool steady;
-    long steps;
-    SimReturn(std::vector<double> o, bool steady, long steps):outputs(o), steady(steady), steps(steps){};
-};
+//struct SimReturn {
+//    std::vector<std::vector<double> > outputs;
+//    SimReturn(std::vector<std::vector<double> > o, long steps):outputs(o){}
+//};
 
 
 class BasicNN
@@ -114,8 +112,8 @@ public:
 #pragma mark - End of necessary methods
     
     // simulate the network for evaluation
-    // we can create recurrent networks, and we usually want them to settle
-    SimReturn simulateTillEquilibrium(std::vector<double> inputValues, int maxSteps);
+    // we generate recurrent networks that may wish to simulate a sequence
+    std::vector<std::vector<double> > simulateSequence(std::vector<std::vector<double> > inputValues, int delay);
     
     std::string display();
     std::string dotFormat(std::string graphName="BasicNN");
@@ -133,10 +131,11 @@ private:
     std::vector<Edge> insertNodeOnEdge(Edge &e);
     
     // helpers for simulation
-    std::vector<double> nodeOuputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs);
+    std::vector<double> nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs);
     std::vector<Edge> inputsToNode(long n);
     std::vector<Edge> outputsFromNode(long n);
-    
+    double visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs);
+
 };
 
 #endif /* defined(__NEATBox__BaseNetwork__) */

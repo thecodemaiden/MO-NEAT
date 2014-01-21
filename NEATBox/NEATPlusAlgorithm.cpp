@@ -470,38 +470,37 @@ bool NEATPlusAlgorithm <IndividualType, InnovationType>::tick()
         sys->fitness = evaluationFunc(sys->individual);
     }
     
-    {
-        // clear species membership lists
-        typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
-        while (speciesIterator != speciesList.end()) {
-            speciesIterator->members.clear();
-            speciesIterator++;
-        }
+//    {
+//        // clear species membership lists
+//        typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
+//        while (speciesIterator != speciesList.end()) {
+//            speciesIterator->members.clear();
+//            speciesIterator++;
+//        }
+//    }
+    
+    if (first_run) {
+        speciate();
+    } else {
+    
+          bool regroup = false;
+          if (speciesList.size() < 10 || stagnantGenerations > maxStagnation/5) {
+              regroup = true;
+              d_threshold /= 1.05;
+          }
+      
+          if (speciesList.size() > 20) {
+              regroup = true;
+              d_threshold *= 1.05;
+          }
+      
+          if (regroup) {
+              // empty the species member lists and remake them
+              speciesList.clear();
+              speciate();
+          }
+          
     }
-    
-    //   if (first_run) {
-    speciate();
-//  }else{
-    
-//    bool regroup = false;
-//    if (speciesList.size() < 10 || stagnantGenerations > maxStagnation/5) {
-//        regroup = true;
-//        d_threshold /= 1.05;
-//    }
-//    
-//    if (speciesList.size() > 20) {
-//        regroup = true;
-//        d_threshold *= 1.05;
-//    }
-//    
-//    if (regroup) {
-//        // empty the species member lists
-//        speciesList.clear();
-//    }
-//    
-//    if (first_run || regroup)
-//        speciate(); // later on we stay in our parents' species! OOOOH
-
     
     updateSharedFitnesses();
 

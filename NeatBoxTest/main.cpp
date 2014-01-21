@@ -11,8 +11,7 @@
 int main(int argc, const char * argv[])
 {
 
-    runXorIndicatorExample();
-  //  runXorExample();
+    runMult3TestTrain();
     return 0;
 }
 

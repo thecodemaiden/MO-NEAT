@@ -318,31 +318,33 @@ long BasicNN::numberOfEdges()
 
 
 
-SimReturn BasicNN::simulateTillEquilibrium(std::vector<double> inputValues, int maxSteps)
+std::vector<std::vector<double> > BasicNN::simulateSequence(std::vector<std::vector<double> > inputValues, int delay)
 {
     // ensure that we have the right number of input values
     long nNodes = nodes.size();
     
-    std::vector<double> currentOutputs = std::vector<double>(nNodes);
+    std::vector<std::vector<double> > allOuputs;
     
-    bool steady = false;
-    long steps;
-    for (steps = -1; steps<maxSteps; steps++) {
-        std::vector<double> lastOutputs = currentOutputs;
-        currentOutputs = nodeOuputsForInputs(inputValues, currentOutputs);
-        if (lastOutputs == currentOutputs) {
-            steady = true;
-            break;
+    for (long i=0; i<inputValues.size(); i++) {
+        std::vector<double> currentOutputs = std::vector<double>(nNodes);
+        std::vector<double> currentInputs = inputValues[i];
+        for (long steps = -1; steps<delay; steps++) {
+            std::vector<double> lastOutputs = currentOutputs;
+            currentOutputs = nodeOutputsForInputs(currentInputs, currentOutputs);
+            if (lastOutputs == currentOutputs) {
+                break;
+            }
         }
+        
+        std::vector<double> finalOutputs;
+        for (std::set<long>::iterator it = outputNodes.begin(); it != outputNodes.end(); it++) {
+            long node = *it;
+            finalOutputs.push_back(currentOutputs[node]);
+        }
+        allOuputs.push_back(finalOutputs);
     }
     
-    std::vector<double> finalOutputs;
-    for (std::set<long>::iterator it = outputNodes.begin(); it != outputNodes.end(); it++) {
-        long node = *it;
-        finalOutputs.push_back(currentOutputs[node]);
-    }
-    
-    return SimReturn(finalOutputs, steady, steps);
+    return allOuputs;
 }
 
 
@@ -378,30 +380,46 @@ static double applyActivationFunc(Node n, double inputSum)
 }
 
 
- std::vector<double> BasicNN::nodeOuputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs)
+
+double BasicNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs)
+{
+    Node n = nodes[i];
+    visitedNodes.insert(i);
+    std::vector<Edge> inputEdges = inputsToNode(i);
+    
+    double inputSum = n.bias;
+    
+    for (long j=0; j<inputEdges.size(); j++) {
+        long nodeN = inputEdges[j].nodeFrom;
+        if (visitedNodes.find(nodeN) == visitedNodes.end()) {
+            lastOutputs[nodeN] = visitNode(nodeN, visitedNodes, lastOutputs);
+        }
+        double rawVal = lastOutputs[nodeN];
+        
+        inputSum += inputEdges[j].weight*rawVal;
+        
+    }
+    
+    return inputSum;
+}
+
+ std::vector<double> BasicNN::nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs)
 {
     std::vector<double> newOutputs;
     
     long inputNodeN = 0; // used to map values from the inputs vector to input nodes
-    
+    std::set<long>visitedNodes;
     for (long i=0; i<nodes.size(); i++) {
         // collect the input values
-        Node n = nodes[i];
-        std::vector<Edge> inputEdges = inputsToNode(i);
-        double inputSum = n.bias;
-        
-        for (long i=0; i<inputEdges.size(); i++) {
-            int nodeN = inputEdges[i].nodeFrom;
-            double rawVal = lastOutputs[nodeN];
-            inputSum += inputEdges[i].weight*rawVal;
-        }
+        double inputSum = visitNode(i, visitedNodes, lastOutputs);
         
         bool isInput = (inputNodes.find(i) != inputNodes.end());
         
         if (isInput) {
             inputSum += (inputs[inputNodeN++]);
         }
-        double output = applyActivationFunc(n, inputSum);
+        
+        double output = applyActivationFunc(nodes[i], inputSum);
         assert(!isUnreasonable(output));
         
         newOutputs.push_back(output);

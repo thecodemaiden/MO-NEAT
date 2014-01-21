@@ -12,6 +12,6 @@
 #include <iostream>
 
 void runXorExample();
-void runXorIndicatorExample();
-
+void runParityExample();
+void runMult3TestTrain();
 #endif /* defined(__NEATBox__ExampleRun__) */

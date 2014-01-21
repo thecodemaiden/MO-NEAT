@@ -24,9 +24,9 @@ BasicNN *createParityNetwork()
     return new BasicNN(3,1);
 }
 
-BasicNN *createXorIndicatorNetwork()
+BasicNN *createMult3Network()
 {
-    return new BasicNN(2,2);
+    return new BasicNN(4,1);
 }
 
 void runAlgorithmToEnd(NEATPlusAlgorithm<BasicNN, Edge> *algo) {
@@ -44,10 +44,6 @@ void runXorExample()
     algo->evaluationFunc = &xorEvaluation;
     algo->stopFunc = &xorFitnessSatisfied;
     
-//    algocreateInitialIndividual = &createParityNetwork;
-//    algo.evaluationFunc = &parityEvaluation;
-//    algo.stopFunc = &parityFitnessSatisfied;
-    
     algo->w_disjoint = 3.0;
     algo->w_excess = 2.0;
     algo->w_matching = 2.0;
@@ -61,15 +57,15 @@ void runXorExample()
     
     xorEvaluation(winner);
     delete algo;
-    
+
 }
 
-void runXorIndicatorExample()
+void runParityExample()
 {
     NEATPlusAlgorithm<BasicNN, Edge> *algo = new NEATPlusAlgorithm<BasicNN, Edge>(150, 200, 50);
-    algo->createInitialIndividual = &createXorIndicatorNetwork;
-    algo->evaluationFunc = &xorWithIndicatorEvaluation;
-    algo->stopFunc = &xorWithIndicatorFitnessSatisfied;
+    algo->createInitialIndividual = &createParityNetwork;
+    algo->evaluationFunc = &parityEvaluation;
+    algo->stopFunc = &parityFitnessSatisfied;
     
     algo->w_disjoint = 3.0;
     algo->w_excess = 2.0;
@@ -82,8 +78,29 @@ void runXorIndicatorExample()
     
     BasicNN *winner = algo->bestIndividual();
     
-    xorWithIndicatorEvaluation(winner);
+    parityEvaluation(winner);
     delete algo;
+    
+}
 
+void runMult3TestTrain()
+{
+    NEATPlusAlgorithm<BasicNN, Edge> *algo = new NEATPlusAlgorithm<BasicNN, Edge>(150, 200, 50);
+    algo->createInitialIndividual = &createMult3Network;
+    algo->evaluationFunc = &trainMult3;
+    
+    algo->w_disjoint = 3.0;
+    algo->w_excess = 2.0;
+    algo->w_matching = 2.0;
+    algo->w_matching_node = 3.0;
+    
+    algo->d_threshold = 3.0;
+    
+    runAlgorithmToEnd(algo);
+    
+    BasicNN *winner = algo->bestIndividual();
+    
+    std::cout << "Test score: " << testMult3(winner) <<"\n";
+    delete algo;
 }
 
