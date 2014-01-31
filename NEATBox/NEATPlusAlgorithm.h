@@ -89,7 +89,7 @@ public:
     
 #pragma mark - Tuning parameters
     // probability of recombination taking from weaker parent
-    double p_c = 0.3;
+    double p_c = 0.01;
     
     // mutation probabilities
     double p_m_node_ins = 0.1; // how likely we are to add a new node

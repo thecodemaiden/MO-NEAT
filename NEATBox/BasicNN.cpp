@@ -147,6 +147,11 @@ void BasicNN::mutateNode(long n)
 
 std::vector<Edge> BasicNN::insertNode()
 {
+    // if all edges are disabled, that's BAD and we are uselesssssss
+    long activeEdges = std::count_if(edges.begin(), edges.end(), [](Edge e) {return !e.disabled;});
+        if (activeEdges == 0)
+            return std::vector<Edge>();
+    
         uint pos;
         do {
             pos = arc4random_uniform((uint)edges.size());
@@ -318,7 +323,7 @@ long BasicNN::numberOfEdges()
 
 
 
-std::vector<std::vector<double> > BasicNN::simulateSequence(std::vector<std::vector<double> > inputValues, int delay)
+std::vector<std::vector<double> > BasicNN::simulateSequence(const std::vector<std::vector<double> > &inputValues, int delay)
 {
     // ensure that we have the right number of input values
     long nNodes = nodes.size();

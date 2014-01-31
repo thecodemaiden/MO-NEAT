@@ -114,87 +114,127 @@ bool xorFitnessSatisfied(double bestFitness)
 }
 
 
-double trainMult3(BasicNN *individual)
+double trainMult23(BasicNN *individual)
 {
     
-    /* leave out 6 cases for testing:
-            1011 = 11, 1001 = 9, 1111 = 15, 0101 = 5, 0010 = 2, 0111 = 7
-     */
-    
     const int nCases = 10;
-    std::vector<std::array<double, 4> > inVals;
+
     const double yesVal = 1.0;
     const double noVal = -1.0;
-    inVals.push_back({noVal,noVal,noVal,noVal});
-    inVals.push_back({noVal,noVal,noVal,yesVal});
-    inVals.push_back({noVal,noVal,yesVal,yesVal});
-    inVals.push_back({noVal,yesVal,noVal,noVal});
-    inVals.push_back({noVal,yesVal,yesVal,noVal});
-    inVals.push_back({yesVal,noVal,noVal,noVal});
-    inVals.push_back({yesVal,noVal,yesVal,noVal});
-    inVals.push_back({yesVal,yesVal,noVal,noVal});
-    inVals.push_back({yesVal,yesVal,noVal,yesVal});
-    inVals.push_back({yesVal,yesVal,yesVal,noVal});
- 
-    std::array<double, nCases> expectedOutput = {yesVal, noVal, yesVal, noVal, yesVal, noVal, noVal, yesVal, noVal, noVal};
-    std::array<double, nCases> actualOutput;
+    
+    std::vector<std::array<double, 4> > inVals;
+    std::vector<std::array<double, 2> > expectedOutput;
 
-    double diff = 0;
+    // 10 training cases:
+    inVals.push_back({noVal,noVal,noVal,noVal}); //0
+    expectedOutput.push_back({yesVal, yesVal});
+    
+    inVals.push_back({noVal,noVal,noVal,yesVal}); //1
+    expectedOutput.push_back({noVal, noVal});
+   
+    inVals.push_back({noVal,noVal,yesVal,yesVal}); //3
+    expectedOutput.push_back({yesVal, noVal});
+   
+    inVals.push_back({noVal,yesVal,noVal,noVal}); //4
+    expectedOutput.push_back({noVal, yesVal});
+   
+    inVals.push_back({noVal,yesVal,yesVal,yesVal});//7
+    expectedOutput.push_back({noVal, noVal});
+  
+    inVals.push_back({yesVal,noVal,noVal,noVal});//8
+    expectedOutput.push_back({noVal, yesVal});
+  
+    inVals.push_back({yesVal,noVal,yesVal,noVal});//10
+    expectedOutput.push_back({noVal, yesVal});
+   
+    inVals.push_back({yesVal,yesVal,noVal,noVal});//12
+    expectedOutput.push_back({yesVal, yesVal});
+   
+    inVals.push_back({yesVal,yesVal,noVal,yesVal});//13
+    expectedOutput.push_back({noVal, noVal});
+  
+    inVals.push_back({yesVal,yesVal,yesVal,yesVal});//15
+    expectedOutput.push_back({yesVal, noVal});
+
+    
+    
+    std::vector<std::array<double, 2> > actualOutput;
+
+  //  int nCorrect = 0;
+    
+    double diff_3 = 0;
+    double diff_2 = 0;
     for (int i=0; i<nCases; i++) {
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
         std::vector<std::vector<double> > seqInputs;
         seqInputs.push_back(input);
         std::vector<std::vector<double> > seqOutputs = individual->simulateSequence(seqInputs, 1);
         std::vector<double> outputs = seqOutputs.front();
-        actualOutput[i] = outputs.front();
+        actualOutput.push_back( {outputs[0], outputs[1]});
         
-        double d = expectedOutput[i] - outputs.front();
-        diff += d*d;
-        
+        double d_3 = expectedOutput[i][0] - outputs[0];
+        double d_2 = expectedOutput[i][1] - outputs[1];
+        diff_2 += d_2*d_2;
+        diff_3 += d_3*d_3;
+    
     }
-
-    const int factor = 4;
+    double diff = (diff_2 + diff_3);
+    const int factor = 8;
     
     return (factor*nCases - diff)*(factor*nCases - diff);
 }
 
-double testMult3(BasicNN *individual)
+double testMult23(BasicNN *individual)
 {
-    /* the 6 cases for testing:
-     1011 = 11, 1001 = 9, 1111 = 15, 0101 = 5, 0010 = 2, 0111 = 7
-     */
     
     const int nCases = 6;
-    std::vector<std::array<double, 4> > inVals;
     const double yesVal = 1.0;
     const double noVal = -1.0;
     
-    inVals.push_back({noVal,noVal,yesVal,noVal});
-    inVals.push_back({noVal,yesVal,yesVal,yesVal});
-    inVals.push_back({noVal,yesVal,noVal,yesVal});
-    inVals.push_back({yesVal,noVal,noVal,yesVal});
-    inVals.push_back({yesVal,noVal,yesVal,yesVal});
-    inVals.push_back({yesVal,yesVal,yesVal,yesVal});
+    std::vector<std::array<double, 4> > inVals;
+    std::vector<std::array<double, 2> > expectedOutput;
 
+    // 6 test cases
+    inVals.push_back({noVal,noVal,yesVal,noVal}); // 2
+    expectedOutput.push_back({noVal, yesVal});
+
+    inVals.push_back({noVal,yesVal,noVal,yesVal}); // 5
+    expectedOutput.push_back({noVal, noVal});
+
+    inVals.push_back({noVal,yesVal,yesVal,noVal}); // 6
+    expectedOutput.push_back({yesVal, yesVal});
+
+    inVals.push_back({yesVal,noVal,noVal,yesVal}); // 9
+    expectedOutput.push_back({yesVal, noVal});
+
+    inVals.push_back({yesVal,noVal,yesVal,yesVal}); // 11
+    expectedOutput.push_back({noVal,noVal});
+
+    inVals.push_back({yesVal,yesVal,yesVal,noVal}); // 14
+    expectedOutput.push_back({noVal, yesVal});
     
-    std::array<double, nCases> expectedOutput = {noVal, noVal, noVal, yesVal, noVal, yesVal};
-    std::array<double, nCases> actualOutput;
     
-    double diff = 0;
+    std::vector<std::array<double, 2> > actualOutput;
+
+    double diff_3 = 0;
+    double diff_2 = 0;
     for (int i=0; i<nCases; i++) {
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
         std::vector<std::vector<double> > seqInputs;
         seqInputs.push_back(input);
         std::vector<std::vector<double> > seqOutputs = individual->simulateSequence(seqInputs, 1);
         std::vector<double> outputs = seqOutputs.front();
-        actualOutput[i] = outputs.front();
+        actualOutput.push_back({outputs[0], outputs[1]});
         
-        double d = expectedOutput[i] - outputs.front();
-        diff += d*d;
+        double d_3 = expectedOutput[i][0] - outputs[0];
+        double d_2 = expectedOutput[i][1] - outputs[1];
+        diff_2 += d_2*d_2;
+        diff_3 += d_3*d_3;
         
     }
+    double diff = diff_2 + diff_3;
     
-    const int factor = 4;
+    const int factor = 8;
     
     return (factor*nCases - diff)*(factor*nCases - diff);
 }

@@ -22,8 +22,8 @@ bool xorFitnessSatisfied(double bestFitness);
 double parityEvaluation(BasicNN *individual);
 bool parityFitnessSatisfied(double bestFitness);
 
-// IS THE INPUT A MULTIPLE OF 3? 0 COUNTS
-double trainMult3(BasicNN *individual);
-double testMult3(BasicNN *individual);
+// IS THE INPUT A MULTIPLE OF 3?2? 
+double trainMult23(BasicNN *individual);
+double testMult23(BasicNN *individual);
 
 #endif /* defined(__NEATBox__ExampleGoals__) */

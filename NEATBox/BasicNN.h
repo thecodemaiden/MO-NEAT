@@ -113,7 +113,7 @@ public:
     
     // simulate the network for evaluation
     // we generate recurrent networks that may wish to simulate a sequence
-    std::vector<std::vector<double> > simulateSequence(std::vector<std::vector<double> > inputValues, int delay);
+    std::vector<std::vector<double> > simulateSequence(const std::vector<std::vector<double> > &inputValues, int delay);
     
     std::string display();
     std::string dotFormat(std::string graphName="BasicNN");

@@ -26,7 +26,7 @@ BasicNN *createParityNetwork()
 
 BasicNN *createMult3Network()
 {
-    return new BasicNN(4,1);
+    return new BasicNN(4,2);
 }
 
 void runAlgorithmToEnd(NEATPlusAlgorithm<BasicNN, Edge> *algo) {
@@ -87,7 +87,7 @@ void runMult3TestTrain()
 {
     NEATPlusAlgorithm<BasicNN, Edge> *algo = new NEATPlusAlgorithm<BasicNN, Edge>(150, 200, 50);
     algo->createInitialIndividual = &createMult3Network;
-    algo->evaluationFunc = &trainMult3;
+    algo->evaluationFunc = &trainMult23;
     
     algo->w_disjoint = 3.0;
     algo->w_excess = 2.0;
@@ -100,7 +100,7 @@ void runMult3TestTrain()
     
     BasicNN *winner = algo->bestIndividual();
     
-    std::cout << "Test score: " << testMult3(winner) <<"\n";
+    std::cout << "Test score: " << testMult23(winner) <<"\n";
     delete algo;
 }
 
