@@ -11,8 +11,8 @@
 #include "BasicNN.h"
 #include "ExampleGoals.h"
 
-#include "NEATPlusAlgorithm.cpp"
-template class NEATPlusAlgorithm<BasicNN,Edge>;
+#include "MONEAT.cpp"
+template class MONEAT<BasicNN,Edge>;
 
 BasicNN *createXorNetwork()
 {
@@ -29,7 +29,7 @@ BasicNN *createMult3Network()
     return new BasicNN(4,2);
 }
 
-void runAlgorithmToEnd(NEATPlusAlgorithm<BasicNN, Edge> *algo) {
+void runAlgorithmToEnd(MONEAT<BasicNN, Edge> *algo) {
     while (!algo->tick());
     BasicNN *winner = algo->bestIndividual();
     std::cout << "Solution found in " << algo->getNumberOfIterations() << " generations.\n\n";
@@ -39,10 +39,9 @@ void runAlgorithmToEnd(NEATPlusAlgorithm<BasicNN, Edge> *algo) {
 
 void runXorExample()
 {
-    NEATPlusAlgorithm<BasicNN, Edge> *algo = new NEATPlusAlgorithm<BasicNN, Edge>(150, 200, 50);
+    MONEAT<BasicNN, Edge> *algo = new MONEAT<BasicNN, Edge>(150, 200, 50);
     algo->createInitialIndividual = &createXorNetwork;
-    algo->evaluationFunc = &xorEvaluation;
-    algo->stopFunc = &xorFitnessSatisfied;
+    algo->evaluationFunctions.push_back(&xorEvaluation);
     
     algo->w_disjoint = 3.0;
     algo->w_excess = 2.0;
@@ -55,17 +54,16 @@ void runXorExample()
     
     BasicNN *winner = algo->bestIndividual();
     
-    xorEvaluation(winner);
+    std::cout << "XOR score: " << xorEvaluation(winner) <<"\n";
     delete algo;
 
 }
 
 void runParityExample()
 {
-    NEATPlusAlgorithm<BasicNN, Edge> *algo = new NEATPlusAlgorithm<BasicNN, Edge>(150, 200, 50);
+    MONEAT<BasicNN, Edge> *algo = new MONEAT<BasicNN, Edge>(150, 200, 50);
     algo->createInitialIndividual = &createParityNetwork;
-    algo->evaluationFunc = &parityEvaluation;
-    algo->stopFunc = &parityFitnessSatisfied;
+    algo->evaluationFunctions.push_back(&parityEvaluation);
     
     algo->w_disjoint = 3.0;
     algo->w_excess = 2.0;
@@ -83,11 +81,11 @@ void runParityExample()
     
 }
 
-void runMult3TestTrain()
+void runMult23SOTestTrain()
 {
-    NEATPlusAlgorithm<BasicNN, Edge> *algo = new NEATPlusAlgorithm<BasicNN, Edge>(150, 200, 50);
+    MONEAT<BasicNN, Edge> *algo = new MONEAT<BasicNN, Edge>(150, 200, 50);
     algo->createInitialIndividual = &createMult3Network;
-    algo->evaluationFunc = &trainMult23;
+    algo->evaluationFunctions.push_back(&trainMult23);
     
     algo->w_disjoint = 3.0;
     algo->w_excess = 2.0;
@@ -103,4 +101,28 @@ void runMult3TestTrain()
     std::cout << "Test score: " << testMult23(winner) <<"\n";
     delete algo;
 }
+
+void runMult23MOTestTrain()
+{
+    MONEAT<BasicNN, Edge> *algo = new MONEAT<BasicNN, Edge>(150, 200, 50);
+    algo->createInitialIndividual = &createMult3Network;
+    algo->evaluationFunctions.push_back(&trainMult2);
+    algo->evaluationFunctions.push_back(&trainMult3);
+    
+    algo->w_disjoint = 3.0;
+    algo->w_excess = 2.0;
+    algo->w_matching = 2.0;
+    algo->w_matching_node = 3.0;
+    
+    algo->d_threshold = 3.0;
+    
+    runAlgorithmToEnd(algo);
+    
+    BasicNN *winner = algo->bestIndividual();
+    
+    std::cout << "2 score: " << testMult2(winner) <<"\n";
+    std::cout << "3 score: " << testMult3(winner) <<"\n";
+    delete algo;
+}
+
 

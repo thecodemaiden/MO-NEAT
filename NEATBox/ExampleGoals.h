@@ -26,4 +26,10 @@ bool parityFitnessSatisfied(double bestFitness);
 double trainMult23(BasicNN *individual);
 double testMult23(BasicNN *individual);
 
+double trainMult2(BasicNN *individual);
+double trainMult3(BasicNN *individual);
+
+double testMult2(BasicNN *individual);
+double testMult3(BasicNN *individual);
+
 #endif /* defined(__NEATBox__ExampleGoals__) */

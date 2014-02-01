@@ -10,8 +10,9 @@
 #include "ExampleRun.h"
 int main(int argc, const char * argv[])
 {
-
-    runMult3TestTrain();
+   // runXorExample();
+    runMult23MOTestTrain();
+//    runMult3TestTrain();
     return 0;
 }
 

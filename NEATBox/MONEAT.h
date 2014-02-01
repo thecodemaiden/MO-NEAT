@@ -1,13 +1,13 @@
 //
-//  NEATPlusAlgorithm.h
+//  MONEAT.h
 //  SystemGenerator
 //
 //  Created by Adeola Bannis on 11/4/13.
 //
 //
 
-#ifndef __SystemGenerator__NEATPlusAlgorithm__
-#define __SystemGenerator__NEATPlusAlgorithm__
+#ifndef __SystemGenerator__MONEAT__
+#define __SystemGenerator__MONEAT__
 
 #include <vector>
 #include <fstream>
@@ -21,9 +21,11 @@
 template <class IndividualType>
 struct SystemInfo {
     IndividualType *individual;
-    double fitness;
+    std::vector<double> fitnesses;
+    double rankFitness;
+    int dominationCount;
     
-    SystemInfo(IndividualType *i):individual(i) { fitness = -INFINITY;}
+    SystemInfo(IndividualType *i):individual(i) {rankFitness = -INFINITY; dominationCount=0;}
     ~SystemInfo() {
         delete individual;
     }
@@ -39,8 +41,9 @@ public:
     int speciesNumber; // for data collection
 };
 
+
 template <class IndividualType, class InnovationType>
-class NEATPlusAlgorithm {
+class MONEAT {
 protected:
     std::vector<InnovationType> newConnections;
     std::vector<SystemInfo<IndividualType> *> population;
@@ -59,6 +62,9 @@ protected:
     void spawnNextGeneration(); // recombine species to get enough children then mutate each one
 
     void mutateSystem(IndividualType  *original); // does not make a copy
+    
+    // returns the best Pareto front of individuals
+    std::vector<SystemInfo<IndividualType> *> rankSystems();
 
     virtual IndividualType *combineSystems(SystemInfo<IndividualType> *sys1, SystemInfo<IndividualType> *sys2);
     virtual double genomeDistance( IndividualType *sys1,  IndividualType *sys2);
@@ -72,15 +78,17 @@ protected:
     void logPopulationStatistics();
     NEATSpecies<IndividualType> &chooseBreedingSpecies(double totalFitness); // fitness proportionate selection
 public:
-    NEATPlusAlgorithm(int populationSize, int maxGenerations, int maxStagnation);
-    ~NEATPlusAlgorithm();
+    MONEAT(int populationSize, int maxGenerations, int maxStagnation);
+    ~MONEAT();
     
     // notice that this cannot be overriden.
     bool tick();
 #pragma mark - Function pointers - MUST BE SET OR ELSE
-    // please set these
-    double (*evaluationFunc)(IndividualType  *individual); // provide a fitness for each individual
-    bool (*stopFunc)(double bestFitness); // set a stopping fitness
+    // MUST SET
+    
+    typedef  double (*EvaluationFunction)(IndividualType  *individual);
+    std::vector<EvaluationFunction> evaluationFunctions;
+    
     IndividualType *(*createInitialIndividual)(void); // the smallest/starting individual
 #pragma mark - 
     
@@ -108,7 +116,6 @@ public:
 #pragma mark -
     
 private:
-    std::ofstream currentLogFile;
     IndividualType *origin; // to find distance of species from start
     int nextInnovationNumber;
     int nextSpeciesNumber;
@@ -117,4 +124,4 @@ private:
 };
 
 
-#endif /* defined(__SystemGenerator__NEATPlusAlgorithm__) */
+#endif /* defined(__SystemGenerator__MONEAT__) */

@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E20CC52F187C447E00AAA3DA /* NEATPlusAlgorithm.h in Headers */ = {isa = PBXBuildFile; fileRef = E20CC52D187C447E00AAA3DA /* NEATPlusAlgorithm.h */; };
+		E20CC52F187C447E00AAA3DA /* MONEAT.h in Headers */ = {isa = PBXBuildFile; fileRef = E20CC52D187C447E00AAA3DA /* MONEAT.h */; };
 		E21362741881D83000A8DCF1 /* NBUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E21362721881D83000A8DCF1 /* NBUtils.cpp */; };
 		E21362751881D83000A8DCF1 /* NBUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = E21362731881D83000A8DCF1 /* NBUtils.h */; };
 		E249A5EE187E154D009DFEBA /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E249A5ED187E154D009DFEBA /* main.cpp */; };
 		E249A5F0187E154D009DFEBA /* NeatBoxTest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */; };
 		E249A5F4187E155D009DFEBA /* NEATBox.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E20CC51B187C445500AAA3DA /* NEATBox.dylib */; };
-		E249A5F5187E5206009DFEBA /* NEATPlusAlgorithm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC52C187C447E00AAA3DA /* NEATPlusAlgorithm.cpp */; };
+		E249A5F5187E5206009DFEBA /* MONEAT.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC52C187C447E00AAA3DA /* MONEAT.cpp */; };
 		E249A5F71880422E009DFEBA /* BasicNN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC533187C544100AAA3DA /* BasicNN.cpp */; };
 		E249A5F818804234009DFEBA /* ExampleGoals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */; };
 		E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */; };
@@ -37,8 +37,8 @@
 		E20CC51F187C445500AAA3DA /* NEATBox-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NEATBox-Prefix.pch"; sourceTree = "<group>"; };
 		E20CC520187C445500AAA3DA /* NEATBoxProj.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = NEATBoxProj.xcconfig; sourceTree = "<group>"; };
 		E20CC521187C445500AAA3DA /* NEATBoxTarget.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = NEATBoxTarget.xcconfig; sourceTree = "<group>"; };
-		E20CC52C187C447E00AAA3DA /* NEATPlusAlgorithm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NEATPlusAlgorithm.cpp; sourceTree = "<group>"; };
-		E20CC52D187C447E00AAA3DA /* NEATPlusAlgorithm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NEATPlusAlgorithm.h; sourceTree = "<group>"; };
+		E20CC52C187C447E00AAA3DA /* MONEAT.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MONEAT.cpp; sourceTree = "<group>"; };
+		E20CC52D187C447E00AAA3DA /* MONEAT.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MONEAT.h; sourceTree = "<group>"; };
 		E20CC533187C544100AAA3DA /* BasicNN.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BasicNN.cpp; sourceTree = "<group>"; };
 		E20CC534187C544100AAA3DA /* BasicNN.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BasicNN.h; sourceTree = "<group>"; };
 		E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ExampleGoals.cpp; path = ../NEATBox/ExampleGoals.cpp; sourceTree = "<group>"; };
@@ -113,8 +113,8 @@
 		E20CC52B187C446800AAA3DA /* Base Algorithm */ = {
 			isa = PBXGroup;
 			children = (
-				E20CC52D187C447E00AAA3DA /* NEATPlusAlgorithm.h */,
-				E20CC52C187C447E00AAA3DA /* NEATPlusAlgorithm.cpp */,
+				E20CC52D187C447E00AAA3DA /* MONEAT.h */,
+				E20CC52C187C447E00AAA3DA /* MONEAT.cpp */,
 			);
 			name = "Base Algorithm";
 			sourceTree = "<group>";
@@ -151,7 +151,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E21362751881D83000A8DCF1 /* NBUtils.h in Headers */,
-				E20CC52F187C447E00AAA3DA /* NEATPlusAlgorithm.h in Headers */,
+				E20CC52F187C447E00AAA3DA /* MONEAT.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -224,7 +224,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E249A5F5187E5206009DFEBA /* NEATPlusAlgorithm.cpp in Sources */,
+				E249A5F5187E5206009DFEBA /* MONEAT.cpp in Sources */,
 				E21362741881D83000A8DCF1 /* NBUtils.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

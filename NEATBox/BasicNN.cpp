@@ -83,11 +83,14 @@ void BasicNN::addGeneFromParentSystem(BasicNN parent, Edge gene)
     
     std::vector<Edge>::iterator found = std::find(edges.begin(), edges.end(), gene);
     
+    bool didDisable = false;
+    
     if (found != edges.end()) {
         found->weight = gene.weight;
         if (found->disabled == gene.disabled)
             return; // nothing more to do, don't modify in/outdegrees
         found->disabled = gene.disabled;
+        didDisable = gene.disabled;
     } else {
         while (gene.nodeFrom >= nodes.size() || gene.nodeTo >= nodes.size()) {
             // add nodes up to the required number, copying from the parent
@@ -101,6 +104,11 @@ void BasicNN::addGeneFromParentSystem(BasicNN parent, Edge gene)
     if (!gene.disabled) {
         nodes.at(gene.nodeFrom).outdegree++;
         nodes.at(gene.nodeTo).indegree++;
+    }
+    
+    if (didDisable) {
+        nodes.at(gene.nodeFrom).outdegree--;
+        nodes.at(gene.nodeTo).indegree--;
     }
     
 //    for(std::set<long>::iterator it = outputNodes.begin(); it!=outputNodes.end(); it++) {
