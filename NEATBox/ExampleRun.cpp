@@ -12,6 +12,8 @@
 #include "ExampleGoals.h"
 
 #include "MONEAT.cpp"
+
+#include <vector>
 template class MONEAT<BasicNN,Edge>;
 
 BasicNN *createXorNetwork()
@@ -29,14 +31,6 @@ BasicNN *createMult3Network()
     return new BasicNN(4,2);
 }
 
-void runAlgorithmToEnd(MONEAT<BasicNN, Edge> *algo) {
-    while (!algo->tick());
-    BasicNN *winner = algo->bestIndividual();
-    std::cout << "Solution found in " << algo->getNumberOfIterations() << " generations.\n\n";
-    std::cout << winner->dotFormat();
-}
-
-
 void runXorExample()
 {
     MONEAT<BasicNN, Edge> *algo = new MONEAT<BasicNN, Edge>(150, 200, 50);
@@ -50,11 +44,11 @@ void runXorExample()
     
     algo->d_threshold = 3.0;
     
-    runAlgorithmToEnd(algo);
+    while (!algo->tick());
     
-    BasicNN *winner = algo->bestIndividual();
-    
-    std::cout << "XOR score: " << xorEvaluation(winner) <<"\n";
+//    BasicNN *winner = algo->bestIndividual();
+//    
+//    std::cout << "XOR score: " << xorEvaluation(winner) <<"\n";
     delete algo;
 
 }
@@ -72,11 +66,11 @@ void runParityExample()
     
     algo->d_threshold = 3.0;
     
-    runAlgorithmToEnd(algo);
+    while (!algo->tick());
     
-    BasicNN *winner = algo->bestIndividual();
-    
-    parityEvaluation(winner);
+//    BasicNN *winner = algo->bestIndividual();
+//    
+//    parityEvaluation(winner);
     delete algo;
     
 }
@@ -94,17 +88,17 @@ void runMult23SOTestTrain()
     
     algo->d_threshold = 3.0;
     
-    runAlgorithmToEnd(algo);
+    while (!algo->tick());
     
-    BasicNN *winner = algo->bestIndividual();
+  //  BasicNN *winner = algo->bestIndividual();
     
-    std::cout << "Test score: " << testMult23(winner) <<"\n";
+ //   std::cout << "Test score: " << testMult23(winner) <<"\n";
     delete algo;
 }
 
 void runMult23MOTestTrain()
 {
-    MONEAT<BasicNN, Edge> *algo = new MONEAT<BasicNN, Edge>(150, 200, 50);
+    MONEAT<BasicNN, Edge> *algo = new MONEAT<BasicNN, Edge>(25, 200, 50);
     algo->createInitialIndividual = &createMult3Network;
     algo->evaluationFunctions.push_back(&trainMult2);
     algo->evaluationFunctions.push_back(&trainMult3);
@@ -116,12 +110,26 @@ void runMult23MOTestTrain()
     
     algo->d_threshold = 3.0;
     
-    runAlgorithmToEnd(algo);
+    while (!algo->tick());
     
-    BasicNN *winner = algo->bestIndividual();
+    std::vector<SystemInfo<BasicNN> *>winners = algo->bestIndividuals;
+
+    std::cout << winners.size() << "optimal solutions found.\n";
     
+    SystemInfo<BasicNN> *bestSystem = NULL;
+    double min_diff = INFINITY;
+    for (std::vector<SystemInfo<BasicNN> *>::iterator it = winners.begin(); it!=winners.end(); it++) {
+        double d= fabs((*it)->fitnesses[0] - (*it)->fitnesses[1]);
+        if (d < min_diff) {
+            bestSystem = *it;
+            min_diff = d;
+        }
+    }
+    
+    BasicNN *winner = bestSystem->individual;
     std::cout << "2 score: " << testMult2(winner) <<"\n";
     std::cout << "3 score: " << testMult3(winner) <<"\n";
+    
     delete algo;
 }
 

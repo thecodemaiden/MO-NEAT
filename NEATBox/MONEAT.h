@@ -26,6 +26,13 @@ struct SystemInfo {
     int dominationCount;
     
     SystemInfo(IndividualType *i):individual(i) {rankFitness = -INFINITY; dominationCount=0;}
+    SystemInfo(const SystemInfo &other)
+     :individual(new IndividualType(*other.individual)),
+      fitnesses(other.fitnesses),
+      rankFitness(other.rankFitness),
+      dominationCount(0)
+    {}
+    
     ~SystemInfo() {
         delete individual;
     }
@@ -55,7 +62,6 @@ protected:
     int maxGenerations;
     
     long generations;
-    IndividualType *_bestIndividual;
     double allTimeBestFitness;
     double lastBestFitness; // before sharing
  
@@ -64,7 +70,7 @@ protected:
     void mutateSystem(IndividualType  *original); // does not make a copy
     
     // returns the best Pareto front of individuals
-    std::vector<SystemInfo<IndividualType> *> rankSystems();
+   void rankSystems();
 
     virtual IndividualType *combineSystems(SystemInfo<IndividualType> *sys1, SystemInfo<IndividualType> *sys2);
     virtual double genomeDistance( IndividualType *sys1,  IndividualType *sys2);
@@ -92,7 +98,7 @@ public:
     IndividualType *(*createInitialIndividual)(void); // the smallest/starting individual
 #pragma mark - 
     
-    IndividualType *bestIndividual();
+    std::vector<SystemInfo<IndividualType> *> bestIndividuals; // the optimal front
     long getNumberOfIterations();
     
 #pragma mark - Tuning parameters

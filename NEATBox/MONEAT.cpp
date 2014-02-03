@@ -25,7 +25,6 @@ MONEAT <IndividualType, InnovationType>::MONEAT(int populationSize, int maxGener
 :populationSize(populationSize), maxStagnation(maxStagnation), maxGenerations(maxGenerations)
 
 {
-    _bestIndividual = NULL;
     nextInnovationNumber = 1;
     nextSpeciesNumber = 1;
     allTimeBestFitness = -INFINITY;
@@ -430,70 +429,85 @@ static int domination(SystemInfo<IndividualType> *s1, SystemInfo<IndividualType>
     return 0;
 }
 
+
 template <class IndividualType, class InnovationType>
-std::vector<SystemInfo<IndividualType> *> MONEAT <IndividualType, InnovationType>::rankSystems()
+void MONEAT <IndividualType, InnovationType>::rankSystems()
 {
     typename std::vector<SystemInfo<IndividualType> *>::iterator popIter;
     
     std::map<SystemInfo<IndividualType> *, std::vector<SystemInfo<IndividualType> *> > dominationMap;
     
-    
+    int counted = 0;
+
     std::vector<SystemInfo<IndividualType> *> bestFront;
     for (popIter = population.begin(); popIter != population.end(); popIter++) {
         std::vector<SystemInfo<IndividualType> *> dominated;
         SystemInfo<IndividualType> *sys = *popIter;
-        sys->dominationCount = 0;
-        
         typename std::vector<SystemInfo<IndividualType> *>::iterator innerIter;
         for (innerIter = population.begin(); innerIter != population.end(); innerIter++) {
             if (*innerIter == *popIter)
                 continue;
             
-            int dominationScore = domination(*popIter, *innerIter);
+            int dominationScore = domination( *innerIter, *popIter);
             
-            if (dominationScore == 1) {
+            if (dominationScore == -1) {
                 // *popIter dominates
                 dominated.push_back(*innerIter);
             }
-            if (dominationScore == -1) {
+            if (dominationScore == 1) {
                 // *innerIter dominates
                 sys->dominationCount += 1;
             }
         }
         if (sys->dominationCount == 0) {
+            counted++;
             sys->rankFitness = 1.0;
             bestFront.push_back(sys);
         }
         dominationMap[sys] = dominated;
+        
     }
     
     int currentRank = 1;
-    
     std::vector<SystemInfo<IndividualType> *> currentFront = bestFront;
-    
+    int min_hope;
     while (!currentFront.empty()) {
         std::vector<SystemInfo<IndividualType> *> nextFront;
-        
+        std::vector<SystemInfo<IndividualType> *> hopefuls;
         typename std::vector<SystemInfo<IndividualType> *>::iterator frontIterator;
+        
         for (frontIterator = currentFront.begin(); frontIterator != currentFront.end(); frontIterator++) {
+            hopefuls.clear();
+            min_hope = 10000;
+            std::vector<SystemInfo<IndividualType> *> dominated = dominationMap[*frontIterator];
             typename std::vector<SystemInfo<IndividualType> *>::iterator it;
-            for (it = dominationMap[*frontIterator].begin(); it != dominationMap[*frontIterator].end(); it++) {
+            for (it = dominated.begin(); it != dominated.end(); it++) {
                 SystemInfo<IndividualType> *s = *it;
                 s->dominationCount -= 1;
                // assert(s->dominationCount >=0);
                 if (s->dominationCount == 0) {
                     s->rankFitness = 1.0/(currentRank+1);
                     nextFront.push_back(s);
+                    counted++;
+                }
+                if (s->dominationCount > 0) {
+                    hopefuls.push_back(s);
+                    if (s->dominationCount < min_hope)
+                        min_hope = s->dominationCount;
                 }
             }
         }
-        
+        assert(hopefuls.size() == 0 || !nextFront.empty());
+
         currentRank += 1;
         currentFront = nextFront;
     }
     
+    assert(counted == population.size());
+
     std::cout << currentRank << " ranks examined.\n";
-    return bestFront;
+    
+    //return bestFront;
 }
 
 // descending, not ascending, order
@@ -515,23 +529,24 @@ bool MONEAT <IndividualType, InnovationType>::tick()
     }
     
     
-    typename std::vector<EvaluationFunction>::iterator funcIter;
-    for (funcIter =  evaluationFunctions.begin(); funcIter != evaluationFunctions.end(); funcIter++) {
-        typename std::vector<SystemInfo<IndividualType> *>::iterator popIter;
-        for (popIter = population.begin(); popIter != population.end(); popIter++) {
-            SystemInfo<IndividualType> *sys = *popIter;
+    
+    typename std::vector<SystemInfo<IndividualType> *>::iterator popIter;
+    for (popIter = population.begin(); popIter != population.end(); popIter++) {
+        SystemInfo<IndividualType> *sys = *popIter;
+        sys->fitnesses.clear();
+        sys->rankFitness = 0;
+        sys->dominationCount = 0;
+        typename std::vector<EvaluationFunction>::iterator funcIter;
+        for (funcIter =  evaluationFunctions.begin(); funcIter != evaluationFunctions.end(); funcIter++) {
             double val = (*funcIter)(sys->individual);
             sys->fitnesses.push_back(val);
         }
     }
     
-    std::vector<SystemInfo<IndividualType> *> bestSystems = rankSystems();
+    rankSystems();
     
     bool last_run =  (generations >= maxGenerations) ;
-    if (last_run) {
-        SystemInfo<IndividualType> *someone = bestSystems.front();
-        std::cout << bestSystems.size() << " systems in best rank.\n";
-    }
+
     
 #if !RESTRICT_SPECIES
    {
@@ -585,7 +600,6 @@ bool MONEAT <IndividualType, InnovationType>::tick()
     std::sort(speciesList.begin(), speciesList.end(), compareSpeciesFitness<IndividualType>);
     
     typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
-    IndividualType *bestFound = NULL;
     while (speciesIterator != speciesList.end()) {
         std::vector<SystemInfo<IndividualType> *> members =speciesIterator->members;
         size_t numMembers = members.size();
@@ -617,10 +631,8 @@ bool MONEAT <IndividualType, InnovationType>::tick()
                     pointer += choiceSep;
                     
                     SystemInfo<IndividualType> *individual = *it;
-
-                    IndividualType *copied = new IndividualType(*individual->individual);
                     
-                    SystemInfo<IndividualType> *saved = new SystemInfo<IndividualType>(copied);
+                    SystemInfo<IndividualType> *saved = new SystemInfo<IndividualType>(**it);
                     double  rankFitness = individual->rankFitness * numMembers;
                     saved->rankFitness = rankFitness;
                     newMembers.push_back(saved);
@@ -641,16 +653,13 @@ bool MONEAT <IndividualType, InnovationType>::tick()
                 
                 SystemInfo<IndividualType> *individual = *it;
                 
-                IndividualType *copied = new IndividualType(*individual->individual);
-                
-                SystemInfo<IndividualType> *saved = new SystemInfo<IndividualType>(copied);
+                SystemInfo<IndividualType> *saved = new SystemInfo<IndividualType>(**it);
                 double  rankFitness = individual->rankFitness * numMembers;
                 saved->rankFitness = individual->rankFitness;
                 newMembers.push_back(saved);
                 individualsToSave.push_back(saved);
                 if (rankFitness > bestFitness) {
                     bestFitness = rankFitness;
-                    bestFound = copied;
                 }
                 it++;
             }
@@ -673,10 +682,7 @@ bool MONEAT <IndividualType, InnovationType>::tick()
         }
         
     }
-    if (_bestIndividual)
-        delete _bestIndividual;
-    
-    _bestIndividual = new IndividualType(*bestFound);
+ 
     
     population = individualsToSave;
     
@@ -694,6 +700,14 @@ bool MONEAT <IndividualType, InnovationType>::tick()
     
     lastBestFitness = bestFitness;
    
+    bestIndividuals.clear();
+    // find the top ranking individuals
+    typename std::vector<SystemInfo<IndividualType> *>::iterator it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [](const SystemInfo<IndividualType> * elem){return elem->rankFitness == 1.0;});
+    for (; it != individualsToSave.end(); it = std::find_if(++it, individualsToSave.end(), [](const SystemInfo<IndividualType> * elem){return elem->rankFitness == 1.0;})) {
+        bestIndividuals.push_back(*it);
+    }
+    
+    
     if (!last_run) {
         spawnNextGeneration();
     }
@@ -701,11 +715,6 @@ bool MONEAT <IndividualType, InnovationType>::tick()
     return  last_run;
 }
 
-template <class IndividualType, class InnovationType>
-IndividualType  *MONEAT <IndividualType, InnovationType>::bestIndividual()
-{
-    return _bestIndividual;
-}
 
 template <class IndividualType, class InnovationType>
 long MONEAT <IndividualType, InnovationType>::getNumberOfIterations()
