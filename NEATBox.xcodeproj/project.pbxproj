@@ -50,6 +50,8 @@
 		E249A5EB187E154D009DFEBA /* NeatBoxTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NeatBoxTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E249A5ED187E154D009DFEBA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = NeatBoxTest.1; sourceTree = "<group>"; };
+		E2FF67B718A04D4400DA0490 /* MNIndividual.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MNIndividual.h; sourceTree = "<group>"; };
+		E2FF67B818A0537D00DA0490 /* MNEdge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MNEdge.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +117,8 @@
 			children = (
 				E20CC52D187C447E00AAA3DA /* MONEAT.h */,
 				E20CC52C187C447E00AAA3DA /* MONEAT.cpp */,
+				E2FF67B718A04D4400DA0490 /* MNIndividual.h */,
+				E2FF67B818A0537D00DA0490 /* MNEdge.h */,
 			);
 			name = "Base Algorithm";
 			sourceTree = "<group>";

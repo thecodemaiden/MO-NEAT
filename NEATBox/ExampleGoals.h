@@ -13,21 +13,21 @@
 #include "BasicNN.h"
 
 
-double dummyEvaluation(BasicNN *individual);
+double dummyEvaluation(MNIndividual *individual);
 bool goodEnoughDummyFitness(double bestFitness);
 
-double xorEvaluation(BasicNN *individual);
+double xorEvaluation(MNIndividual *individual);
 bool xorFitnessSatisfied(double bestFitness);
 
-double parityEvaluation(BasicNN *individual);
+double parityEvaluation(MNIndividual *individual);
 bool parityFitnessSatisfied(double bestFitness);
 
 // IS THE INPUT A MULTIPLE OF 3?2? 
-double trainMult23(BasicNN *individual);
+double trainMult23(MNIndividual *individual);
 double testMult23(BasicNN *individual);
 
-double trainMult2(BasicNN *individual);
-double trainMult3(BasicNN *individual);
+double trainMult2(MNIndividual *individual);
+double trainMult3(MNIndividual *individual);
 
 double testMult2(BasicNN *individual);
 double testMult3(BasicNN *individual);

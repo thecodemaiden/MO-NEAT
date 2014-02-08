@@ -18,16 +18,20 @@
 #include <sstream>
 #include <wordexp.h>
 
-template <class IndividualType>
+#include "MNEdge.h"
+#include "MNIndividual.h"
+
+struct InnovationInfo;
+
 struct SystemInfo {
-    IndividualType *individual;
+    MNIndividual *individual;
     std::vector<double> fitnesses;
     double rankFitness;
     int dominationCount;
     
-    SystemInfo(IndividualType *i):individual(i) {rankFitness = -INFINITY; dominationCount=0;}
+    SystemInfo(MNIndividual *i):individual(i) {rankFitness = -INFINITY; dominationCount=0;}
     SystemInfo(const SystemInfo &other)
-     :individual(new IndividualType(*other.individual)),
+     :individual(other.individual->clone()),
       fitnesses(other.fitnesses),
       rankFitness(other.rankFitness),
       dominationCount(0)
@@ -38,23 +42,21 @@ struct SystemInfo {
     }
 };
 
-template <class IndividualType>
 class NEATSpecies {
 public:
 // each generation the members are cleared out, repopulated, and the representative is updated
-    IndividualType *representative;
-    std::vector<SystemInfo<IndividualType> *>members;
+    MNIndividual *representative;
+    std::vector<SystemInfo *>members;
     double totalSharedFitness;
     int speciesNumber; // for data collection
 };
 
 
-template <class IndividualType, class InnovationType>
 class MONEAT {
 protected:
-    std::vector<InnovationType> newConnections;
-    std::vector<SystemInfo<IndividualType> *> population;
-    std::vector<NEATSpecies<IndividualType> >speciesList;
+    std::vector<InnovationInfo *> newConnections;
+    std::vector<SystemInfo *> population;
+    std::vector<NEATSpecies>speciesList;
 
     int populationSize;
     int stagnantGenerations;
@@ -67,22 +69,24 @@ protected:
  
     void spawnNextGeneration(); // recombine species to get enough children then mutate each one
 
-    void mutateSystem(IndividualType  *original); // does not make a copy
+    void mutateSystem(MNIndividual  *original); // does not make a copy
     
-    // returns the best Pareto front of individuals
-   void rankSystems();
+    // finds the Pareto fronts of individuals
+    void rankSystems();
 
-    virtual IndividualType *combineSystems(SystemInfo<IndividualType> *sys1, SystemInfo<IndividualType> *sys2);
-    virtual double genomeDistance( IndividualType *sys1,  IndividualType *sys2);
+    virtual MNIndividual *combineSystems(SystemInfo *sys1, SystemInfo *sys2);
+    virtual double genomeDistance( MNIndividual *sys1,  MNIndividual *sys2);
 
-    virtual void assignInnovationNumberToAttachment(IndividualType *individual, InnovationType i);
-
+    virtual void assignInnovationNumberToAttachment(InnovationInfo *i);
     
     // overriden functions cannot be called in constructors, so this is called on the first tick();
     virtual void prepareInitialPopulation();
         
     void logPopulationStatistics();
-    NEATSpecies<IndividualType> &chooseBreedingSpecies(double totalFitness); // fitness proportionate selection
+    NEATSpecies &chooseBreedingSpecies(double totalFitness); // fitness proportionate selection
+    
+    std::vector<InnovationInfo *> orderedConnectionGenome(std::vector<MNEdge *> genome);
+    
 public:
     MONEAT(int populationSize, int maxGenerations, int maxStagnation);
     ~MONEAT();
@@ -92,13 +96,13 @@ public:
 #pragma mark - Function pointers - MUST BE SET OR ELSE
     // MUST SET
     
-    typedef  double (*EvaluationFunction)(IndividualType  *individual);
+    typedef  double (*EvaluationFunction)(MNIndividual  *individual);
     std::vector<EvaluationFunction> evaluationFunctions;
     
-    IndividualType *(*createInitialIndividual)(void); // the smallest/starting individual
+    MNIndividual *(*createInitialIndividual)(void); // the smallest/starting individual
 #pragma mark - 
     
-    std::vector<SystemInfo<IndividualType> *> bestIndividuals; // the optimal front
+    std::vector<SystemInfo *> bestIndividuals; // the optimal front
     long getNumberOfIterations();
     
 #pragma mark - Tuning parameters
@@ -122,7 +126,7 @@ public:
 #pragma mark -
     
 private:
-    IndividualType *origin; // to find distance of species from start
+    MNIndividual *origin; // to find distance of species from start
     int nextInnovationNumber;
     int nextSpeciesNumber;
     void speciate(); // divide everything into species

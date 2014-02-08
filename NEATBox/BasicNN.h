@@ -14,6 +14,8 @@
 #include <string>
 #include <set>
 #include "NBUtils.h"
+#include "MNIndividual.h"
+
 enum ActivationFunc {
     GAUSSIAN_FUNC,
     TANH_FUNC,
@@ -23,29 +25,45 @@ enum ActivationFunc {
 
 };
 
+
+
 std::string activationFuncName(ActivationFunc f);
 
-struct Edge {
+struct Edge : public virtual MNEdge {
     int nodeFrom;
     int nodeTo;
     
     double weight;
     
-    int innovationNumber; // needed for NEAT
     bool disabled;  // for NEAT
     
     
     Edge(int from, int to)
-    :nodeFrom(from), nodeTo(to), innovationNumber(0),disabled(false)
+    :nodeFrom(from), nodeTo(to),disabled(false)
     {
         // random weight
         weight = normallyDistributed();
     }
     
+    Edge(const Edge& other)
+    :nodeFrom(other.nodeFrom), nodeTo(other.nodeTo), disabled(other.disabled), weight(other.weight)
+    {
+        
+    }
+    
+    virtual Edge *clone() const {return new Edge(*this);}
+    
     // equality
     bool operator==(const Edge& other)const {
         return nodeFrom == other.nodeFrom && nodeTo == other.nodeTo;
     }
+    
+    virtual bool operator==(const MNEdge& other)const
+    {
+        const Edge *e = dynamic_cast<const Edge *>(&other);
+        return e && (*this == *e);
+    }
+
     
     bool operator!=(const Edge& other)const {
         return !(*this==other);
@@ -83,7 +101,7 @@ struct Node {
 //};
 
 
-class BasicNN
+class BasicNN : public virtual MNIndividual
 {
     std::vector<Node> nodes;
     std::vector<Edge> edges;
@@ -92,22 +110,24 @@ class BasicNN
     // this is a weighted directed graph, the standard model of a NN
 public:
 #pragma mark - Necessary for NEATPlusAlgorithm to work
-    static double connectionDifference(const Edge &mine, const Edge &other);
 
     BasicNN(int nInputs, int nOutputs);
     
-    void addGeneFromParentSystem(BasicNN parent, Edge gene);
-    std::vector<Edge> connectionGenome();
+    void addGeneFromParentSystem(MNIndividual *parent, MNEdge *gene);
+    std::vector<MNEdge *> connectionGenome();
     
-    double nodeDifference(BasicNN other);
+    double nodeDifference(MNIndividual *other);
     
-    void updateInnovationNumber(const Edge &info);
-
     void mutateConnectionWeight();
     void mutateNode(long n);
-    std::vector<Edge> insertNode();
-    Edge createConnection();
+    std::vector<MNEdge *> createNode();
+    Edge *createConnection();
+    
+    double connectionDifference(MNEdge *e1, MNEdge *e2);
                             // allows for decay
+    
+    virtual BasicNN *clone() const {return new BasicNN(*this);}
+
     
 #pragma mark - End of necessary methods
     
@@ -128,7 +148,7 @@ private:
     std::set<long> inputNodes;
     std::set<long> outputNodes;
     
-    std::vector<Edge> insertNodeOnEdge(Edge &e);
+    std::vector<MNEdge *> insertNodeOnEdge(Edge &e);
     
     // helpers for simulation
     std::vector<double> nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs);

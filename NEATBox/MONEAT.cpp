@@ -16,12 +16,70 @@
 #include <map>
 #include <iostream>
 
+#include "NBUtils.h"
+
 #define RESTRICT_SPECIES 0
 #define ROULETTE_SELECT 0
 #define INTERSPECIES 0
 
-template <class IndividualType, class InnovationType>
-MONEAT <IndividualType, InnovationType>::MONEAT(int populationSize, int maxGenerations, int maxStagnation)
+
+
+// SO DIRTY
+struct InnovationInfo {
+//private:
+    InnovationInfo(const InnovationInfo& other)
+    :data(other.data), innovationNumber(other.innovationNumber), wasCloned(false)
+    {
+        
+    }
+//public:
+    MNEdge *data;
+    bool wasCloned;
+    int innovationNumber;
+    
+    InnovationInfo(MNEdge *e)
+    :data(e->clone()),innovationNumber(-1), wasCloned(true){}
+
+    
+  
+    
+    InnovationInfo *clone()
+    {
+        InnovationInfo *newOne = new InnovationInfo(data->clone());
+        newOne->innovationNumber = innovationNumber;
+        newOne->wasCloned = true;
+        return newOne;
+    }
+    
+    
+    ~InnovationInfo(){
+        if (wasCloned)
+            delete data;
+    }
+    
+    bool operator==(const InnovationInfo& other)const {
+        return *(data) == *(other.data);
+    }
+    
+    bool operator==(const MNEdge& other)const {
+        return *data == other;
+    }
+};
+
+/// OH GOD I HATE C++ FUNCTORSSSS
+// http://stackoverflow.com/questions/258871/how-to-use-find-algorithm-with-a-vector-of-pointers-to-objects-in-c
+template <typename T>
+struct pointer_values_equal
+{
+    const T* to_find;
+    
+    bool operator()(const T* other) const
+    {
+        return *to_find == *other;
+    }
+};
+
+MONEAT::MONEAT(int populationSize, int maxGenerations, int maxStagnation)
 :populationSize(populationSize), maxStagnation(maxStagnation), maxGenerations(maxGenerations)
 
 {
@@ -33,14 +91,13 @@ MONEAT <IndividualType, InnovationType>::MONEAT(int populationSize, int maxGener
     origin = NULL;
 }
 
-template <class IndividualType, class InnovationType>
-MONEAT <IndividualType, InnovationType>::~MONEAT()
+MONEAT::~MONEAT()
 {
     //empty the species lists
-    typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
+    std::vector<NEATSpecies>::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
-        std::vector<SystemInfo<IndividualType> *> members = speciesIterator->members;
-        typename std::vector<SystemInfo<IndividualType> *>::iterator it = members.begin();
+        std::vector<SystemInfo *> members = speciesIterator->members;
+         std::vector<SystemInfo *>::iterator it = members.begin();
         while (it != members.end()) {
             it = members.erase(it);
         }
@@ -50,45 +107,62 @@ MONEAT <IndividualType, InnovationType>::~MONEAT()
 }
 
 // return true if sys1 comes before sys2
-template <class IndividualType>
-static bool compareIndividuals(SystemInfo<IndividualType> *sys1, SystemInfo<IndividualType> *sys2)
+static bool compareIndividuals(SystemInfo *sys1, SystemInfo *sys2)
 {
     return sys1->rankFitness > sys2->rankFitness;
 }
 
-template <class InnovationType>
-static bool compareInnovationNumbers(const InnovationType a1, const InnovationType a2)
+static bool compareInnovationNumbers(const InnovationInfo *a1, const InnovationInfo *a2)
 {
-    return a1.innovationNumber < a2.innovationNumber;
+    return a1->innovationNumber < a2->innovationNumber;
 }
 
-template <class IndividualType, class InnovationType>
-IndividualType *MONEAT <IndividualType, InnovationType>::combineSystems(SystemInfo<IndividualType> *sys1, SystemInfo<IndividualType> *sys2)
+
+std::vector<InnovationInfo*> MONEAT::orderedConnectionGenome(std::vector<MNEdge *> genome)
+{
+    std::vector<InnovationInfo *> newGenome;
+    
+    std::vector<MNEdge *>::iterator it = genome.begin();
+    while (it != genome.end()) {
+        InnovationInfo *innov = new InnovationInfo(*it);
+        // assign the number to innov
+        assignInnovationNumberToAttachment(innov);
+        newGenome.push_back(innov);
+        it++;
+    }
+    
+    std::sort(newGenome.begin(), newGenome.end(), compareInnovationNumbers);
+    
+    return newGenome;
+}
+
+
+MNIndividual *MONEAT::combineSystems(SystemInfo *sys1, SystemInfo *sys2)
 {
     
     if (sys1 == sys2) {
         // breeding with myself?
-        return new IndividualType(*sys1->individual);
+        return (sys1->individual->clone());
     }
     
-    IndividualType *newChild = createInitialIndividual();
-    std::vector<InnovationType> genome1 = sys1->individual->connectionGenome();
-    std::vector<InnovationType> genome2 = sys2->individual->connectionGenome();
+    MNIndividual *newChild = createInitialIndividual();
+    std::vector<InnovationInfo *> genome1 = orderedConnectionGenome(sys1->individual->connectionGenome());
+    std::vector<InnovationInfo *> genome2 = orderedConnectionGenome(sys2->individual->connectionGenome());
     
     // holy crap, c++ has some good standard methods, like *set difference*
-    std::vector<InnovationType> matchingGenes1;
-    std::vector<InnovationType> matchingGenes2;
+    std::vector<InnovationInfo *> matchingGenes1;
+    std::vector<InnovationInfo *> matchingGenes2;
     
     // set intersection takes from the first range given - I do it twice so I have the matches from parent 1 and from parent 2.
-    std::set_intersection(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(matchingGenes1), compareInnovationNumbers<InnovationType>);
-    std::set_intersection(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(),std::back_inserter(matchingGenes2), compareInnovationNumbers<InnovationType>);
+    std::set_intersection(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(matchingGenes1), compareInnovationNumbers);
+    std::set_intersection(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(),std::back_inserter(matchingGenes2), compareInnovationNumbers);
     
     
     
     // first we handle the matching genes
     for (int i=0; i<matchingGenes1.size(); i++){
-        InnovationType gene = matchingGenes1[i];
-        IndividualType *parent = sys1->individual;
+        InnovationInfo *gene = matchingGenes1[i];
+        MNIndividual *parent = sys1->individual;
         // randomly choose 1 to add to the child
         double selector = (double )rand()/RAND_MAX;
         
@@ -96,59 +170,61 @@ IndividualType *MONEAT <IndividualType, InnovationType>::combineSystems(SystemIn
             parent = sys2->individual;
             gene = matchingGenes2[i];
         }
-        newChild->addGeneFromParentSystem(*parent, gene);
+        newChild->addGeneFromParentSystem(parent, gene->data);
     }
     
     
-    std::vector<InnovationType> disjointandExcess1;
-    std::vector<InnovationType> disjointandExcess2;
+    std::vector<InnovationInfo *> disjointandExcess1;
+    std::vector<InnovationInfo *> disjointandExcess2;
     
-    std::set_difference(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(disjointandExcess1), compareInnovationNumbers<InnovationType>);
-    std::set_difference(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(), std::back_inserter(disjointandExcess2), compareInnovationNumbers<InnovationType>);
+    std::set_difference(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(disjointandExcess1), compareInnovationNumbers);
+    std::set_difference(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(), std::back_inserter(disjointandExcess2), compareInnovationNumbers);
     
     
     // then the disjoint genes
     if (sys1->rankFitness >= sys2->rankFitness) {
         for (int i=0; i<disjointandExcess1.size(); i++) {
-            newChild->addGeneFromParentSystem(*sys1->individual, disjointandExcess1[i]);
+            newChild->addGeneFromParentSystem(sys1->individual, disjointandExcess1[i]->data);
         }
     }
     
     // if rankFitness is equal, include all genes
     if (sys2->rankFitness >= sys1->rankFitness) {
         for (int i=0; i<disjointandExcess2.size(); i++) {
-            newChild->addGeneFromParentSystem(*sys2->individual, disjointandExcess2[i]);
+            newChild->addGeneFromParentSystem(sys2->individual, disjointandExcess2[i]->data);
         }
     }
+    
+
+    
     return newChild;
 }
 
-template <class IndividualType, class InnovationType>
-void MONEAT <IndividualType, InnovationType>::spawnNextGeneration()
+void MONEAT::spawnNextGeneration()
 {
     double  rankFitnessSum = 0.0;
-    typename std::vector<SystemInfo<IndividualType> *>::iterator it = population.begin();
+    typename std::vector<SystemInfo *>::iterator it = population.begin();
     while (it != population.end()) {
         rankFitnessSum += (*it)->rankFitness;
         it++;
     }
 
     // create population children through recombination
-    std::vector<SystemInfo<IndividualType> *>newGeneration;
+    std::vector<SystemInfo *>newGeneration;
     
-    typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIt = speciesList.begin();
+     std::vector<NEATSpecies>::iterator speciesIt = speciesList.begin();
     while(speciesIt != speciesList.end()) {
         // selectionnnnn
-        NEATSpecies<IndividualType> breedingSpecies = *speciesIt;//chooseBreedingSpecies(rankFitnessSum);
-        std::vector<SystemInfo<IndividualType> *>newMembers;
+        NEATSpecies breedingSpecies = *speciesIt;//chooseBreedingSpecies(rankFitnessSum);
+        std::vector<SystemInfo *>newMembers;
         
-        std::vector<SystemInfo<IndividualType> *>individuals = breedingSpecies.members;
+        std::vector<SystemInfo *>individuals = breedingSpecies.members;
         
         while (newMembers.size() < individuals.size()) {
-            SystemInfo<IndividualType> *p1;
-            SystemInfo<IndividualType> *p2;
+            SystemInfo *p1;
+            SystemInfo *p2;
             
-            IndividualType *child;
+            MNIndividual *child;
             
             int parentPosition = arc4random_uniform((int)individuals.size());
             p1 = (individuals[parentPosition]);
@@ -180,7 +256,7 @@ void MONEAT <IndividualType, InnovationType>::spawnNextGeneration()
             // mutate the new individual (maybe)
             mutateSystem(child);
             
-            SystemInfo<IndividualType> *i = new SystemInfo<IndividualType>(child);
+            SystemInfo *i = new SystemInfo(child);
             newGeneration.push_back(i);
             newMembers.push_back(i);
         }
@@ -193,8 +269,7 @@ void MONEAT <IndividualType, InnovationType>::spawnNextGeneration()
 //    population = newGeneration;
 }
 
-template <class IndividualType, class InnovationType>
-NEATSpecies<IndividualType> &MONEAT<IndividualType, InnovationType>::chooseBreedingSpecies(double totalFitness)
+NEATSpecies &MONEAT::chooseBreedingSpecies(double totalFitness)
 {
     
     // choose a species according to species fitness
@@ -203,7 +278,7 @@ NEATSpecies<IndividualType> &MONEAT<IndividualType, InnovationType>::chooseBreed
     // Assume sorted population
     double selector = ((double )rand()/RAND_MAX);
     
-    typename std::vector<NEATSpecies<IndividualType> >::iterator it = speciesList.begin();
+    typename std::vector<NEATSpecies >::iterator it = speciesList.begin();
     double  cumulativeFitness = 0.0;
     while (it != speciesList.end()) {
         cumulativeFitness += it->totalSharedFitness/totalFitness;
@@ -220,16 +295,15 @@ NEATSpecies<IndividualType> &MONEAT<IndividualType, InnovationType>::chooseBreed
 }
 
 
-template <class IndividualType, class InnovationType>
-void MONEAT <IndividualType, InnovationType>::speciate()
+void MONEAT::speciate()
 {
-    typename std::vector<SystemInfo<IndividualType> *>::iterator populationIter = population.begin();
+    typename std::vector<SystemInfo *>::iterator populationIter = population.begin();
     
     while (populationIter != population.end()) {
         // assign to species
         bool added= false;
         
-        typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
+        typename std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
         while (speciesIterator != speciesList.end()) {
             double  distance = genomeDistance((*populationIter)->individual, speciesIterator->representative);
             if (fabs(distance) < d_threshold) {
@@ -242,8 +316,8 @@ void MONEAT <IndividualType, InnovationType>::speciate()
         
         if (!added) {
             // new species!!
-            NEATSpecies<IndividualType> s = NEATSpecies<IndividualType>();
-            s.representative = new IndividualType(*(*populationIter)->individual);
+            NEATSpecies s = NEATSpecies();
+            s.representative = (*populationIter)->individual->clone();
             s.members.push_back(*populationIter);
             speciesList.push_back(s);
             s.speciesNumber = nextSpeciesNumber++;
@@ -255,32 +329,31 @@ void MONEAT <IndividualType, InnovationType>::speciate()
     
 }
 
-template <class IndividualType, class InnovationType>
-void MONEAT <IndividualType, InnovationType>::updateSharedFitnesses()
+void MONEAT::updateSharedFitnesses()
 {
     long nSpecies = speciesList.size();
     fprintf(stderr, "%ld species\n", nSpecies);
     
     // for each species, copy a random current member to be the representative for the next generation, and adjust the fitnesses for sharing
     // kill off a species with no members
-    typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
+    typename std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
         // pick a new rep
-        std::vector<SystemInfo<IndividualType> *> members = speciesIterator->members;
+        std::vector<SystemInfo *> members = speciesIterator->members;
         if (members.size() == 0) {
-            NEATSpecies<IndividualType> extinctSpecies = *speciesIterator;
+            NEATSpecies extinctSpecies = *speciesIterator;
             speciesIterator = speciesList.erase(speciesIterator);
         } else {
             long index = uniformlyDistributed(members.size());
-            IndividualType *rep = (members[index]->individual);
+            MNIndividual *rep = (members[index]->individual);
             delete speciesIterator->representative;
-            speciesIterator->representative = new IndividualType(*rep);
+            speciesIterator->representative = rep->clone();
             
             // fprintf(stderr, "\tSpecies %d: %ld members\n", ++i, members.size());
             
             // update the fitnesses
             double  totalFitness = 0.0;
-            typename std::vector<SystemInfo<IndividualType> *>::iterator memberIterator = members.begin();
+            typename std::vector<SystemInfo *>::iterator memberIterator = members.begin();
             while (memberIterator != members.end()) {
                 assert((*memberIterator)->rankFitness != -INFINITY);
                 (*memberIterator)->rankFitness /= members.size();
@@ -295,11 +368,10 @@ void MONEAT <IndividualType, InnovationType>::updateSharedFitnesses()
 }
 
 // unlike base NEAT, also take node differences into account
-template <class IndividualType, class InnovationType>
-double  MONEAT <IndividualType, InnovationType>::genomeDistance( IndividualType *sys1,  IndividualType *sys2)
+double  MONEAT::genomeDistance( MNIndividual *sys1,  MNIndividual *sys2)
 {
-    std::vector<InnovationType> genome1 = sys1->connectionGenome();
-    std::vector<InnovationType> genome2 = sys2->connectionGenome();
+    std::vector<InnovationInfo *> genome1 = orderedConnectionGenome(sys1->connectionGenome());
+    std::vector<InnovationInfo *> genome2 = orderedConnectionGenome(sys2->connectionGenome());
     
     // find the longer one
     size_t longerSize = (genome1.size() > genome2.size() ? genome1.size()  : genome2.size());
@@ -310,27 +382,27 @@ double  MONEAT <IndividualType, InnovationType>::genomeDistance( IndividualType 
     size_t matchingDiff = 0;
     
     // yay stdlib!
-    std::vector<InnovationType> matchingGenes1;
-    std::vector<InnovationType> matchingGenes2;
-    std::vector<InnovationType> disjointFromSys1;
-    std::vector<InnovationType> disjointFromSys2;
+    std::vector<InnovationInfo *> matchingGenes1;
+    std::vector<InnovationInfo *> matchingGenes2;
+    std::vector<InnovationInfo *> disjointFromSys1;
+    std::vector<InnovationInfo *> disjointFromSys2;
     
     // set intersection takes from the first range given - I do it twice so I have the matches from parent 1 and from parent 2.
-    std::set_intersection(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(matchingGenes1), compareInnovationNumbers<InnovationType>);
-    std::set_intersection(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(),std::back_inserter(matchingGenes2), compareInnovationNumbers<InnovationType>);
+    std::set_intersection(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(matchingGenes1), compareInnovationNumbers);
+    std::set_intersection(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(),std::back_inserter(matchingGenes2), compareInnovationNumbers);
     
     // difference takes things in the first range that are not in the second - we will have to check for excess ourself
-    std::set_difference(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(disjointFromSys1), compareInnovationNumbers<InnovationType>);
-    std::set_difference(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(), std::back_inserter(disjointFromSys2), compareInnovationNumbers<InnovationType>);
+    std::set_difference(genome1.begin(), genome1.end(), genome2.begin(), genome2.end(), std::back_inserter(disjointFromSys1), compareInnovationNumbers);
+    std::set_difference(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(), std::back_inserter(disjointFromSys2), compareInnovationNumbers);
     
     
     nMatching = matchingGenes2.size();
     // first find the distance between matching genes
     for (int i=0; i<nMatching; i++) {
-        InnovationType a1 = matchingGenes1[i];
-        InnovationType a2 = matchingGenes2[i];
+        MNEdge *a1 = matchingGenes1[i]->data;
+        MNEdge *a2 = matchingGenes2[i]->data;
         
-        matchingDiff += IndividualType::connectionDifference(a1, a2);
+        matchingDiff += sys1->connectionDifference(a1, a2);
     }
     
     // now determine the excess vs disjoint
@@ -342,11 +414,11 @@ double  MONEAT <IndividualType, InnovationType>::genomeDistance( IndividualType 
         nDisjoint = disjointFromSys1.size() + disjointFromSys2.size();
         
         // then find the number of excess genes
-        int last1 = disjointFromSys1.back().innovationNumber;
-        int last2 = disjointFromSys2.back().innovationNumber;
+        int last1 = disjointFromSys1.back()->innovationNumber;
+        int last2 = disjointFromSys2.back()->innovationNumber;
         
-        std::vector<InnovationType> shorter;
-        std::vector<InnovationType> longer;
+        std::vector<InnovationInfo *> shorter;
+        std::vector<InnovationInfo *> longer;
         
         if (last1 != last2) {
             if (last1 > last2) {
@@ -365,7 +437,7 @@ double  MONEAT <IndividualType, InnovationType>::genomeDistance( IndividualType 
             // go back from end of longer until we run into a value <= the end of shorter
             size_t i;
             for (i=longer.size(); i; i--) {
-                if (longer[i].innovationNumber < shorter.back().innovationNumber)
+                if (longer[i-1]->innovationNumber < shorter.back()->innovationNumber)
                     break;
             }
             nExcess = i;
@@ -374,7 +446,7 @@ double  MONEAT <IndividualType, InnovationType>::genomeDistance( IndividualType 
     }
     
     
-    double diff_node = sys1->nodeDifference(*sys2);
+    double diff_node = sys1->nodeDifference(sys2);
     long moreNodes = std::min(sys1->numberOfNodes(), sys2->numberOfNodes());
     
     double  d = w_disjoint*nDisjoint/longerSize + w_excess*nExcess/longerSize + w_matching*matchingDiff/nMatching;
@@ -388,22 +460,25 @@ double  MONEAT <IndividualType, InnovationType>::genomeDistance( IndividualType 
 }
 
 
-template <class IndividualType, class InnovationType>
-void MONEAT <IndividualType, InnovationType>::prepareInitialPopulation()
+void MONEAT::prepareInitialPopulation()
 {
+    // we need to index the genome of the 'base' system
+    origin = createInitialIndividual();
+    std::vector<InnovationInfo *> baseGenome = orderedConnectionGenome(origin->connectionGenome());
+
+    
     // mutate the initial system to get an initial population
     while (population.size() < populationSize) {
-        IndividualType *newSystem = createInitialIndividual();
+        MNIndividual *newSystem = createInitialIndividual();
         mutateSystem(newSystem);
-        SystemInfo<IndividualType> *info = new SystemInfo<IndividualType>(newSystem);
+        SystemInfo *info = new SystemInfo(newSystem);
         population.push_back(info);
     }
 }
 
 // does s1 dominate s2?
 // i.e. all s1 fitness values are greater than s2?
-template <class IndividualType>
-static int domination(SystemInfo<IndividualType> *s1, SystemInfo<IndividualType> *s2)
+static int domination(SystemInfo *s1, SystemInfo *s2)
 {
     bool firstDominates = true;
     bool secondDominates = true;
@@ -421,29 +496,33 @@ static int domination(SystemInfo<IndividualType> *s1, SystemInfo<IndividualType>
         fitnessIter1++;
     }
     
+    if (firstDominates == secondDominates)
+        return 0;
+    
     if (firstDominates)
         return 1;
-    else if (secondDominates)
+    
+    if (secondDominates)
         return -1;
     
     return 0;
 }
 
 
-template <class IndividualType, class InnovationType>
-void MONEAT <IndividualType, InnovationType>::rankSystems()
+void MONEAT::rankSystems()
 {
-    typename std::vector<SystemInfo<IndividualType> *>::iterator popIter;
+    typename std::vector<SystemInfo *>::iterator popIter;
     
-    std::map<SystemInfo<IndividualType> *, std::vector<SystemInfo<IndividualType> *> > dominationMap;
+    std::map<SystemInfo *, std::vector<SystemInfo *> > dominationMap;
     
     int counted = 0;
 
-    std::vector<SystemInfo<IndividualType> *> bestFront;
+    std::vector<SystemInfo *> bestFront;
     for (popIter = population.begin(); popIter != population.end(); popIter++) {
-        std::vector<SystemInfo<IndividualType> *> dominated;
-        SystemInfo<IndividualType> *sys = *popIter;
-        typename std::vector<SystemInfo<IndividualType> *>::iterator innerIter;
+        std::vector<SystemInfo *> dominated;
+        SystemInfo *sys = *popIter;
+        sys->dominationCount = 0;
+        typename std::vector<SystemInfo *>::iterator innerIter;
         for (innerIter = population.begin(); innerIter != population.end(); innerIter++) {
             if (*innerIter == *popIter)
                 continue;
@@ -469,20 +548,16 @@ void MONEAT <IndividualType, InnovationType>::rankSystems()
     }
     
     int currentRank = 1;
-    std::vector<SystemInfo<IndividualType> *> currentFront = bestFront;
-    int min_hope;
+    std::vector<SystemInfo *> currentFront = bestFront;
     while (!currentFront.empty()) {
-        std::vector<SystemInfo<IndividualType> *> nextFront;
-        std::vector<SystemInfo<IndividualType> *> hopefuls;
-        typename std::vector<SystemInfo<IndividualType> *>::iterator frontIterator;
+        std::vector<SystemInfo *> nextFront;
+        typename std::vector<SystemInfo *>::iterator frontIterator;
         
         for (frontIterator = currentFront.begin(); frontIterator != currentFront.end(); frontIterator++) {
-            hopefuls.clear();
-            min_hope = 10000;
-            std::vector<SystemInfo<IndividualType> *> dominated = dominationMap[*frontIterator];
-            typename std::vector<SystemInfo<IndividualType> *>::iterator it;
+            std::vector<SystemInfo *> dominated = dominationMap[*frontIterator];
+            typename std::vector<SystemInfo *>::iterator it;
             for (it = dominated.begin(); it != dominated.end(); it++) {
-                SystemInfo<IndividualType> *s = *it;
+                SystemInfo *s = *it;
                 s->dominationCount -= 1;
                // assert(s->dominationCount >=0);
                 if (s->dominationCount == 0) {
@@ -490,14 +565,8 @@ void MONEAT <IndividualType, InnovationType>::rankSystems()
                     nextFront.push_back(s);
                     counted++;
                 }
-                if (s->dominationCount > 0) {
-                    hopefuls.push_back(s);
-                    if (s->dominationCount < min_hope)
-                        min_hope = s->dominationCount;
-                }
             }
         }
-        assert(hopefuls.size() == 0 || !nextFront.empty());
 
         currentRank += 1;
         currentFront = nextFront;
@@ -511,31 +580,27 @@ void MONEAT <IndividualType, InnovationType>::rankSystems()
 }
 
 // descending, not ascending, order
-template <class IndividualType>
-static bool compareSpeciesFitness(const NEATSpecies<IndividualType>& s1, const NEATSpecies<IndividualType>& s2)
+static bool compareSpeciesFitness(const NEATSpecies& s1, const NEATSpecies& s2)
 {
     return s1.totalSharedFitness > s2.totalSharedFitness;
 }
 
-template <class IndividualType, class InnovationType>
-bool MONEAT <IndividualType, InnovationType>::tick()
+bool MONEAT::tick()
 {
     bool first_run = false;
     if (population.size() == 0) {
         prepareInitialPopulation();
-        
-        origin = new IndividualType(*population.front()->individual);
+     
         first_run = true;
     }
     
     
     
-    typename std::vector<SystemInfo<IndividualType> *>::iterator popIter;
+    typename std::vector<SystemInfo *>::iterator popIter;
     for (popIter = population.begin(); popIter != population.end(); popIter++) {
-        SystemInfo<IndividualType> *sys = *popIter;
+        SystemInfo *sys = *popIter;
         sys->fitnesses.clear();
-        sys->rankFitness = 0;
-        sys->dominationCount = 0;
+        
         typename std::vector<EvaluationFunction>::iterator funcIter;
         for (funcIter =  evaluationFunctions.begin(); funcIter != evaluationFunctions.end(); funcIter++) {
             double val = (*funcIter)(sys->individual);
@@ -551,7 +616,7 @@ bool MONEAT <IndividualType, InnovationType>::tick()
 #if !RESTRICT_SPECIES
    {
        // clear species membership lists
-       typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
+       typename std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
        while (speciesIterator != speciesList.end()) {
            speciesIterator->members.clear();
            speciesIterator++;
@@ -595,13 +660,13 @@ bool MONEAT <IndividualType, InnovationType>::tick()
         sharedFitnessSum += speciesList[i].totalSharedFitness;
     }
     
-    std::vector<SystemInfo<IndividualType> *> individualsToSave;
+    std::vector<SystemInfo *> individualsToSave;
     // sort the species to ensure we keep the best
-    std::sort(speciesList.begin(), speciesList.end(), compareSpeciesFitness<IndividualType>);
+    std::sort(speciesList.begin(), speciesList.end(), compareSpeciesFitness);
     
-    typename std::vector<NEATSpecies<IndividualType> >::iterator speciesIterator = speciesList.begin();
+    typename std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
-        std::vector<SystemInfo<IndividualType> *> members =speciesIterator->members;
+        std::vector<SystemInfo *> members =speciesIterator->members;
         size_t numMembers = members.size();
 
         double  proportionToSave = (speciesIterator->totalSharedFitness)/sharedFitnessSum;
@@ -609,7 +674,7 @@ bool MONEAT <IndividualType, InnovationType>::tick()
         
         assert(numToSave >= 0);
         
-        std::sort(members.begin(), members.end(), compareIndividuals<IndividualType>);
+        std::sort(members.begin(), members.end(), compareIndividuals);
         
         // don't let population grow unchecked
         if (individualsToSave.size() > populationSize)
@@ -618,8 +683,8 @@ bool MONEAT <IndividualType, InnovationType>::tick()
         
         //stochastic universal selection
         if (numToSave > 0) {
-            std::vector<SystemInfo<IndividualType> *> newMembers;
-            typename std::vector<SystemInfo<IndividualType> *>::iterator it = members.begin();
+            std::vector<SystemInfo *> newMembers;
+            typename std::vector<SystemInfo *>::iterator it = members.begin();
 
 #if ROULETTE_SELECT
             double choiceSep = (speciesIterator->totalSharedFitness/numToSave);
@@ -630,9 +695,9 @@ bool MONEAT <IndividualType, InnovationType>::tick()
                 if (cumFitness >= pointer) {
                     pointer += choiceSep;
                     
-                    SystemInfo<IndividualType> *individual = *it;
+                    SystemInfo *individual = *it;
                     
-                    SystemInfo<IndividualType> *saved = new SystemInfo<IndividualType>(**it);
+                    SystemInfo *saved = new SystemInfo(**it);
                     double  rankFitness = individual->rankFitness * numMembers;
                     saved->rankFitness = rankFitness;
                     newMembers.push_back(saved);
@@ -651,11 +716,11 @@ bool MONEAT <IndividualType, InnovationType>::tick()
 #else
             while (newMembers.size() < numToSave) {
                 
-                SystemInfo<IndividualType> *individual = *it;
+                SystemInfo *individual = *it;
                 
-                SystemInfo<IndividualType> *saved = new SystemInfo<IndividualType>(**it);
+                SystemInfo *saved = new SystemInfo(**it);
                 double  rankFitness = individual->rankFitness * numMembers;
-                saved->rankFitness = individual->rankFitness;
+                saved->rankFitness = rankFitness;
                 newMembers.push_back(saved);
                 individualsToSave.push_back(saved);
                 if (rankFitness > bestFitness) {
@@ -665,7 +730,7 @@ bool MONEAT <IndividualType, InnovationType>::tick()
             }
 #endif
             
-            typename std::vector<SystemInfo<IndividualType> *>::iterator deleteIt =  members.begin();
+            typename std::vector<SystemInfo *>::iterator deleteIt =  members.begin();
             
             while (deleteIt !=  members.end()) {
                 assert(*deleteIt != NULL);
@@ -702,8 +767,8 @@ bool MONEAT <IndividualType, InnovationType>::tick()
    
     bestIndividuals.clear();
     // find the top ranking individuals
-    typename std::vector<SystemInfo<IndividualType> *>::iterator it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [](const SystemInfo<IndividualType> * elem){return elem->rankFitness == 1.0;});
-    for (; it != individualsToSave.end(); it = std::find_if(++it, individualsToSave.end(), [](const SystemInfo<IndividualType> * elem){return elem->rankFitness == 1.0;})) {
+    typename std::vector<SystemInfo *>::iterator it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [](const SystemInfo * elem){return elem->rankFitness == 1.0;});
+    for (; it != individualsToSave.end(); it = std::find_if(++it, individualsToSave.end(), [](const SystemInfo * elem){return elem->rankFitness == 1.0;})) {
         bestIndividuals.push_back(*it);
     }
     
@@ -716,19 +781,17 @@ bool MONEAT <IndividualType, InnovationType>::tick()
 }
 
 
-template <class IndividualType, class InnovationType>
-long MONEAT <IndividualType, InnovationType>::getNumberOfIterations()
+long MONEAT::getNumberOfIterations()
 {
     return generations;
 }
 
 
-template <class IndividualType, class InnovationType>
-void MONEAT <IndividualType, InnovationType>::mutateSystem(IndividualType *original)
+void MONEAT::mutateSystem(MNIndividual *original)
 {
     
-    std::vector<InnovationType> allAttachments = original->connectionGenome();
-    typename std::vector<InnovationType>::iterator it = allAttachments.begin();
+    std::vector<MNEdge *> allAttachments = original->connectionGenome();
+    typename std::vector<MNEdge *>::iterator it = allAttachments.begin();
     while (it != allAttachments.end()) {
         double selector = (double )rand()/RAND_MAX;
         if (selector < p_m_conn)
@@ -748,36 +811,47 @@ void MONEAT <IndividualType, InnovationType>::mutateSystem(IndividualType *origi
     if (selector1 < p_m_conn_ins) {
         // insert a new connection
         // update the innovation number
-        InnovationType created = original->createConnection();
-        assignInnovationNumberToAttachment(original, created);
+        MNEdge *created = original->createConnection();
+        InnovationInfo *newInfo = new InnovationInfo(created);
+        assignInnovationNumberToAttachment(newInfo);
+        delete newInfo;
     }
     
     double selector2 = (double )rand()/RAND_MAX;
     if (selector2 < p_m_node_ins) {
         // add a node somewhere if possible
-        std::vector<InnovationType> new_edges = original->insertNode();
+        std::vector<MNEdge *> new_edges = original->createNode();
         for (int i=0; i<new_edges.size(); i++) {
-            assignInnovationNumberToAttachment(original,  new_edges[i]);
+            InnovationInfo *newInfo = new InnovationInfo(new_edges[i]);
+            assignInnovationNumberToAttachment(newInfo);
+            delete newInfo;
         }
     }
     
 }
 
-template <class IndividualType, class InnovationType>
-void MONEAT <IndividualType, InnovationType>::assignInnovationNumberToAttachment(IndividualType *individual, InnovationType i){
+
+
+void MONEAT::assignInnovationNumberToAttachment(InnovationInfo *i){
     // have we already created this 'innovation' in this generation?
-    typename std::vector<InnovationType>::iterator it = std::find(newConnections.begin(), newConnections.end(), i);
-    if (it!= newConnections.end()) {
-        i.innovationNumber = it->innovationNumber;
+    pointer_values_equal<InnovationInfo> pred = {i};
+    std::vector<InnovationInfo *>::iterator it = std::find_if(newConnections.begin(), newConnections.end(), pred);
+    
+    InnovationInfo *found = NULL;
+    
+    if (it== newConnections.end()) {
+        // not already existing
+        found =  new InnovationInfo(i->data); // clone the data
+        found->innovationNumber = nextInnovationNumber++;
+        newConnections.push_back(found);
     } else {
-        i.innovationNumber = nextInnovationNumber++;
-        newConnections.push_back(i);
+        found = *it;
     }
-    individual->updateInnovationNumber(i);
+    i->innovationNumber = found->innovationNumber;
+    
 }
 
-template <class IndividualType, class InnovationType>
-void MONEAT <IndividualType, InnovationType>::logPopulationStatistics()
+void MONEAT::logPopulationStatistics()
 {
    
 }

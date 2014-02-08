@@ -11,7 +11,7 @@
 #include <array>
 #include <cmath>
 
-double dummyEvaluation(BasicNN *individual)
+double dummyEvaluation(MNIndividual *individual)
 {
 
     return 1.0/(individual->numberOfEdges());
@@ -24,8 +24,13 @@ bool goodEnoughDummyFitness(double bestFitness)
 
 
 
-double parityEvaluation(BasicNN *individual)
+double parityEvaluation(MNIndividual *i)
 {
+    
+    BasicNN *individual = dynamic_cast<BasicNN *>(i);
+    if (!individual)
+        return -INFINITY;
+    
     const int numCases = 8;
     std::vector<std::array<double, 3> > inVals;
     const double yesVal = 1.0;
@@ -68,8 +73,12 @@ bool parityFitnessSatisfied(double bestFitness)
 
 
 
-double xorEvaluation(BasicNN *individual)
+double xorEvaluation(MNIndividual *i)
 {
+    BasicNN *individual = dynamic_cast<BasicNN *>(i);
+    if (!individual)
+        return -INFINITY;
+    
     const int nCases = 4;
     const double yesVal = 1.0;
     const double noVal = -1.0;
@@ -112,8 +121,12 @@ bool xorFitnessSatisfied(double bestFitness)
 }
 
 
-double trainMult23(BasicNN *individual)
+double trainMult23(MNIndividual *i)
 {
+    
+    BasicNN *individual = dynamic_cast<BasicNN *>(i);
+    if (!individual)
+        return -INFINITY;
     
     const int nCases = 10;
 
@@ -182,8 +195,11 @@ double trainMult23(BasicNN *individual)
     return diff;//(factor*nCases - diff)*(factor*nCases - diff);
 }
 
-double testMult23(BasicNN *individual)
+double testMult23(MNIndividual *i)
 {
+    BasicNN *individual = dynamic_cast<BasicNN *>(i);
+    if (!individual)
+        return -INFINITY;
     
     const int nCases = 6;
     const double yesVal = 1.0;
@@ -240,8 +256,13 @@ double testMult23(BasicNN *individual)
 // FOR MONEAT
 
 
-double trainMult2(BasicNN *individual)
+double trainMult2(MNIndividual *i)
 {
+    
+    BasicNN *individual = dynamic_cast<BasicNN *>(i);
+    if (!individual)
+        return -INFINITY;
+    
     const int nCases = 10;
     
     const double yesVal = 1.0;
@@ -307,8 +328,12 @@ double trainMult2(BasicNN *individual)
     return diff;//(factor*nCases - diff)*(factor*nCases - diff);
 }
 
-double trainMult3(BasicNN *individual)
+double trainMult3(MNIndividual *i)
 {
+    BasicNN *individual = dynamic_cast<BasicNN *>(i);
+    if (!individual)
+        return -INFINITY;
+    
     const int nCases = 10;
     
     const double yesVal = 1.0;
@@ -378,6 +403,8 @@ double trainMult3(BasicNN *individual)
 
 double testMult2(BasicNN *individual)
 {
+
+    
     const int nCases = 6;
     const double yesVal = 1.0;
     const double noVal = -1.0;
@@ -432,6 +459,7 @@ double testMult2(BasicNN *individual)
 
 double testMult3(BasicNN *individual)
 {
+    
     const int nCases = 6;
     const double yesVal = 1.0;
     const double noVal = -1.0;

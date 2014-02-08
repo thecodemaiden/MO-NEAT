@@ -76,39 +76,49 @@ BasicNN::BasicNN(int nInputs, int nOutputs)
     
 }
 
-void BasicNN::addGeneFromParentSystem(BasicNN parent, Edge gene)
+void BasicNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
 {
-    if (gene.nodeFrom < 0 || gene.nodeTo < 0)
+    
+    BasicNN *parent = dynamic_cast<BasicNN *>(p);
+    Edge *gene = dynamic_cast<Edge *>(g);
+    
+    if (!parent || !gene)
+        return; // can't do nothin with this
+    
+    if (gene->nodeFrom < 0 || gene->nodeTo < 0)
         return; // invalid
     
-    std::vector<Edge>::iterator found = std::find(edges.begin(), edges.end(), gene);
+    std::vector<Edge>::iterator found = std::find(edges.begin(), edges.end(), *gene);
     
     bool didDisable = false;
     
     if (found != edges.end()) {
-        found->weight = gene.weight;
-        if (found->disabled == gene.disabled)
+        found->weight = gene->weight;
+        if (found->disabled == gene->disabled)
             return; // nothing more to do, don't modify in/outdegrees
-        found->disabled = gene.disabled;
-        didDisable = gene.disabled;
+        found->disabled = gene->disabled;
+        didDisable = gene->disabled;
     } else {
-        while (gene.nodeFrom >= nodes.size() || gene.nodeTo >= nodes.size()) {
+        
+        Edge copy = Edge(*gene);
+        
+        while (gene->nodeFrom >= nodes.size() || gene->nodeTo >= nodes.size()) {
             // add nodes up to the required number, copying from the parent
             // hope that we don't have floating nodes...
-            Node newNode = Node(parent.nodes[nodes.size()]);
+            Node newNode = Node(parent->nodes[nodes.size()]);
             newNode.indegree = newNode.outdegree = 0;
             nodes.push_back(newNode);
         }
-        edges.push_back(gene);
+        edges.push_back(copy);
     }
-    if (!gene.disabled) {
-        nodes.at(gene.nodeFrom).outdegree++;
-        nodes.at(gene.nodeTo).indegree++;
+    if (!gene->disabled) {
+        nodes.at(gene->nodeFrom).outdegree++;
+        nodes.at(gene->nodeTo).indegree++;
     }
     
     if (didDisable) {
-        nodes.at(gene.nodeFrom).outdegree--;
-        nodes.at(gene.nodeTo).indegree--;
+        nodes.at(gene->nodeFrom).outdegree--;
+        nodes.at(gene->nodeTo).indegree--;
     }
     
 //    for(std::set<long>::iterator it = outputNodes.begin(); it!=outputNodes.end(); it++) {
@@ -117,15 +127,12 @@ void BasicNN::addGeneFromParentSystem(BasicNN parent, Edge gene)
     
 }
 
-static bool compareInnovationNumbers(const Edge &e1, const Edge &e2)
+std::vector<MNEdge *> BasicNN::connectionGenome()
 {
-    return e1.innovationNumber < e2.innovationNumber;
-}
-
-std::vector<Edge> BasicNN::connectionGenome()
-{
-    std::vector<Edge> genome = std::vector<Edge>(edges);
-    std::sort(genome.begin(), genome.end(), compareInnovationNumbers);
+    std::vector<MNEdge *> genome;
+    for (std::vector<Edge>::iterator it = edges.begin(); it != edges.end(); it++) {
+        genome.push_back(&*it);
+    }
     return genome;
 }
 
@@ -153,12 +160,12 @@ void BasicNN::mutateNode(long n)
 }
 
 
-std::vector<Edge> BasicNN::insertNode()
+std::vector<MNEdge *> BasicNN::createNode()
 {
     // if all edges are disabled, that's BAD and we are uselesssssss
     long activeEdges = std::count_if(edges.begin(), edges.end(), [](Edge e) {return !e.disabled;});
         if (activeEdges == 0)
-            return std::vector<Edge>();
+            return std::vector<MNEdge *>();
     
         uint pos;
         do {
@@ -170,7 +177,7 @@ std::vector<Edge> BasicNN::insertNode()
         return insertNodeOnEdge(toSplit);
 }
 
-std::vector<Edge> BasicNN::insertNodeOnEdge(Edge &e)
+std::vector<MNEdge *> BasicNN::insertNodeOnEdge(Edge &e)
 {
     uint nextNode = (uint)nodes.size();
     Node newNode = Node();
@@ -183,12 +190,17 @@ std::vector<Edge> BasicNN::insertNodeOnEdge(Edge &e)
         e2.disabled = e.disabled;
     e.disabled = true;
     
-    edges.push_back(e1);
-    edges.push_back(e2);
+    std::vector<Edge>::iterator edgeIt;
+    std::vector<MNEdge *> toReturn;
+
     
-    std::vector<Edge> toReturn;
-    toReturn.push_back(e1);
-    toReturn.push_back(e2);
+    edgeIt = edges.insert(edges.end(), e1);
+    toReturn.push_back(&*edgeIt);
+    
+    edgeIt = edges.insert(edges.end(), e2);
+    toReturn.push_back(&*edgeIt);
+    
+    
     
     return toReturn;
 }
@@ -227,7 +239,7 @@ std::vector<Edge> BasicNN::insertNodeOnEdge(Edge &e)
 //}
 
 
-Edge BasicNN::createConnection()
+Edge *BasicNN::createConnection()
 {
     // pick two existing, unconnected nodes and connect them - can connect self to self!
     long maxConnections = (nodes.size()*nodes.size());
@@ -235,6 +247,8 @@ Edge BasicNN::createConnection()
     long activeEdges = std::count_if(edges.begin(), edges.end(), [](Edge e) {return !e.disabled;});
     
     Edge newEdge = Edge(-1,-1);
+    
+    std::vector<Edge>::iterator edgePos = edges.end();
     
     if (activeEdges < maxConnections) {
         // chose a source node at random
@@ -262,7 +276,7 @@ Edge BasicNN::createConnection()
         
         Node sink;
         bool found = false;
-        std::vector<Edge>::iterator existing = existingEdges.end();
+       // edgePos = existingEdges.end();
         
         do {
             pos = arc4random_uniform((uint)nodes.size());
@@ -272,49 +286,51 @@ Edge BasicNN::createConnection()
             
             sink = nodes.at(pos);
             newEdge.nodeTo = pos;
-            existing = std::find(existingEdges.begin(), existingEdges.end(), newEdge);
+            edgePos = std::find(existingEdges.begin(), existingEdges.end(), newEdge);
             
-            found = (existing != existingEdges.end() && !existing->disabled); // already enabled edge?
+            found = (edgePos != existingEdges.end() && !edgePos->disabled); // already enabled edge?
             
             
         } while (sink.indegree >= maxDegree || found);
         nodes.at(pos).indegree++;
 
-        if (existing != existingEdges.end() && existing->disabled)
-            existing->disabled = false;
-        else
+        if (edgePos != existingEdges.end() && edgePos->disabled) {
+            edgePos->disabled = false;
+        } else {
             edges.push_back(newEdge);
+            edgePos = edges.end()-1;
+        }
     }
+
+
     
-    return newEdge;
+    return &*edgePos;
 }
 
-void BasicNN::updateInnovationNumber(const Edge &info)
+double BasicNN::connectionDifference(MNEdge *e1, MNEdge *e2)
 {
-    //find the edge and update it
-    std::vector<Edge>::iterator it = std::find(edges.begin(), edges.end(), info);
     
-    if (it != edges.end()) {
-        it->innovationNumber = info.innovationNumber;
-    }
+    Edge *first = dynamic_cast<Edge *>(e1);
+    Edge *second = dynamic_cast<Edge *>(e2);
     
+    if (!first || !second)
+        return INFINITY;
+    
+    return fabs(first->weight - second->weight);
 }
 
-double BasicNN::connectionDifference(const Edge &c1, const Edge &c2)
+double BasicNN::nodeDifference(MNIndividual *ind)
 {
-    double weightDiff = fabs(c1.weight - c2.weight);
+    BasicNN *other = dynamic_cast<BasicNN *>(ind);
+    if (!other)
+        return INFINITY;
     
-    return weightDiff;
-}
-
-double BasicNN::nodeDifference(BasicNN other)
-{
-    long length = std::min(other.nodes.size(), nodes.size());
+    long length = std::min(other->nodes.size(), nodes.size());
     double d = 0;
     for (long i=0; i<length; i++) {
-        if (other.nodes[i].type != nodes[i].type)
+        if (other->nodes[i].type != nodes[i].type)
             d++;
-        d+= (nodes[i].bias - other.nodes[i].bias);
+        d+= (nodes[i].bias - other->nodes[i].bias);
     }
     return d;
 }
