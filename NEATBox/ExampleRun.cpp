@@ -112,7 +112,7 @@ void runMult23MOTestTrain()
     while (!algo->tick());
     
     std::vector<SystemInfo *>winners = algo->bestIndividuals;
-
+    assert(winners.size() > 0);
     std::cout << winners.size() << " optimal solutions found.\n";
     
     SystemInfo *bestSystem = NULL;

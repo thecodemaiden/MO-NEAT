@@ -276,7 +276,6 @@ Edge *BasicNN::createConnection()
         
         Node sink;
         bool found = false;
-       // edgePos = existingEdges.end();
         
         do {
             pos = arc4random_uniform((uint)nodes.size());
@@ -302,9 +301,8 @@ Edge *BasicNN::createConnection()
         }
     }
 
-
-    
-    return &*edgePos;
+    Edge *toReturn = &*edgePos;
+    return toReturn;
 }
 
 double BasicNN::connectionDifference(MNEdge *e1, MNEdge *e2)

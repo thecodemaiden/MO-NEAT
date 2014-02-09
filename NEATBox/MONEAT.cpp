@@ -18,11 +18,13 @@
 
 #include "NBUtils.h"
 
-#define RESTRICT_SPECIES 0
+#define RESTRICT_SPECIES 1
 #define ROULETTE_SELECT 0
 #define INTERSPECIES 0
 
+#define TIGHT_CLUSTERS 0
 
+#define USE_NODE_DIFF 1
 
 // SO DIRTY
 struct InnovationInfo {
@@ -39,9 +41,6 @@ struct InnovationInfo {
     
     InnovationInfo(MNEdge *e)
     :data(e->clone()),innovationNumber(-1), wasCloned(true){}
-
-    
-  
     
     InnovationInfo *clone()
     {
@@ -126,7 +125,7 @@ std::vector<InnovationInfo*> MONEAT::orderedConnectionGenome(std::vector<MNEdge 
     while (it != genome.end()) {
         InnovationInfo *innov = new InnovationInfo(*it);
         // assign the number to innov
-        assignInnovationNumberToAttachment(innov);
+        assignInnovationNumberToGene(innov);
         newGenome.push_back(innov);
         it++;
     }
@@ -195,6 +194,16 @@ MNIndividual *MONEAT::combineSystems(SystemInfo *sys1, SystemInfo *sys2)
         }
     }
     
+    // clean out the allocated InnovationInfos
+    for (std::vector<InnovationInfo *>::iterator dit = genome1.begin(); dit != genome1.end();) {
+        delete *dit;
+        dit = genome1.erase(dit);
+    }
+    
+    for (std::vector<InnovationInfo *>::iterator dit = genome2.begin(); dit != genome2.end();) {
+        delete *dit;
+        dit = genome2.erase(dit);
+    }
 
     
     return newChild;
@@ -297,22 +306,39 @@ NEATSpecies &MONEAT::chooseBreedingSpecies(double totalFitness)
 
 void MONEAT::speciate()
 {
-    typename std::vector<SystemInfo *>::iterator populationIter = population.begin();
-    
+     std::vector<SystemInfo *>::iterator populationIter = population.begin();
     while (populationIter != population.end()) {
+
         // assign to species
         bool added= false;
+#if TIGHT_CLUSTERS
+        double smallestDiff = INFINITY;
+        std::vector<NEATSpecies>::iterator chosenSpecies = speciesList.end();
+#endif
         
-        typename std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
+         std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
         while (speciesIterator != speciesList.end()) {
-            double  distance = genomeDistance((*populationIter)->individual, speciesIterator->representative);
-            if (fabs(distance) < d_threshold) {
+            double  distance = fabs(genomeDistance((*populationIter)->individual, speciesIterator->representative));
+            if (distance < d_threshold) {
+#if TIGHT_CLUSTERS
+                if (distance < smallestDiff) {
+                    smallestDiff = distance;
+                    chosenSpecies = speciesIterator;
+                }
+#else
                 added = true;
                 speciesIterator->members.push_back((*populationIter));
                 break;
+#endif
             }
             speciesIterator++;
         }
+#if TIGHT_CLUSTERS
+        if (chosenSpecies != speciesList.end()) {
+            added = true;
+            chosenSpecies->members.push_back((*populationIter));
+        }
+#endif
         
         if (!added) {
             // new species!!
@@ -325,8 +351,6 @@ void MONEAT::speciate()
         
         populationIter++;
     }
-    
-    
 }
 
 void MONEAT::updateSharedFitnesses()
@@ -452,10 +476,23 @@ double  MONEAT::genomeDistance( MNIndividual *sys1,  MNIndividual *sys2)
     double  d = w_disjoint*nDisjoint/longerSize + w_excess*nExcess/longerSize + w_matching*matchingDiff/nMatching;
     
     //    double  d = w_disjoint*nDisjoint + w_excess*nExcess + w_matching*matchingDiff;
+#if USE_NODE_DIFF
+      d+= + w_matching_node*diff_node/moreNodes;
+    // d += w_matching_node*diff_node
+#endif
     
-    //  d+= + w_matching_node*diff_node/moreNodes;
+    // clean out the allocated InnovationInfos
+    for (std::vector<InnovationInfo *>::iterator dit = genome1.begin(); dit != genome1.end();) {
+        delete *dit;
+        dit = genome1.erase(dit);
+    }
     
-    //assert(!isUnreasonable(d));
+    for (std::vector<InnovationInfo *>::iterator dit = genome2.begin(); dit != genome2.end();) {
+        delete *dit;
+        dit = genome2.erase(dit);
+    }
+
+    
     return d;
 }
 
@@ -465,6 +502,12 @@ void MONEAT::prepareInitialPopulation()
     // we need to index the genome of the 'base' system
     origin = createInitialIndividual();
     std::vector<InnovationInfo *> baseGenome = orderedConnectionGenome(origin->connectionGenome());
+   
+    // clean out the allocated InnovationInfos
+    for (std::vector<InnovationInfo *>::iterator dit = baseGenome.begin(); dit != baseGenome.end();) {
+        delete *dit;
+        dit = baseGenome.erase(dit);
+    }
 
     
     // mutate the initial system to get an initial population
@@ -594,8 +637,6 @@ bool MONEAT::tick()
         first_run = true;
     }
     
-    
-    
     typename std::vector<SystemInfo *>::iterator popIter;
     for (popIter = population.begin(); popIter != population.end(); popIter++) {
         SystemInfo *sys = *popIter;
@@ -664,7 +705,7 @@ bool MONEAT::tick()
     // sort the species to ensure we keep the best
     std::sort(speciesList.begin(), speciesList.end(), compareSpeciesFitness);
     
-    typename std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
+    std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
         std::vector<SystemInfo *> members =speciesIterator->members;
         size_t numMembers = members.size();
@@ -681,12 +722,13 @@ bool MONEAT::tick()
             numToSave = 0;
         
         
-        //stochastic universal selection
         if (numToSave > 0) {
             std::vector<SystemInfo *> newMembers;
-            typename std::vector<SystemInfo *>::iterator it = members.begin();
+            std::vector<SystemInfo *>::iterator it = members.begin();
 
 #if ROULETTE_SELECT
+            //stochastic universal selection
+
             double choiceSep = (speciesIterator->totalSharedFitness/numToSave);
             double pointer = ((double)rand()/RAND_MAX)*choiceSep;
             std::vector<long> savedPositions;
@@ -730,10 +772,9 @@ bool MONEAT::tick()
             }
 #endif
             
-            typename std::vector<SystemInfo *>::iterator deleteIt =  members.begin();
+            std::vector<SystemInfo *>::iterator deleteIt =  members.begin();
             
             while (deleteIt !=  members.end()) {
-                assert(*deleteIt != NULL);
                 delete *deleteIt;
                 deleteIt =  members.erase(deleteIt);
             }
@@ -767,7 +808,7 @@ bool MONEAT::tick()
    
     bestIndividuals.clear();
     // find the top ranking individuals
-    typename std::vector<SystemInfo *>::iterator it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [](const SystemInfo * elem){return elem->rankFitness == 1.0;});
+     std::vector<SystemInfo *>::iterator it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [](const SystemInfo * elem){return elem->rankFitness == 1.0;});
     for (; it != individualsToSave.end(); it = std::find_if(++it, individualsToSave.end(), [](const SystemInfo * elem){return elem->rankFitness == 1.0;})) {
         bestIndividuals.push_back(*it);
     }
@@ -813,7 +854,7 @@ void MONEAT::mutateSystem(MNIndividual *original)
         // update the innovation number
         MNEdge *created = original->createConnection();
         InnovationInfo *newInfo = new InnovationInfo(created);
-        assignInnovationNumberToAttachment(newInfo);
+        assignInnovationNumberToGene(newInfo);
         delete newInfo;
     }
     
@@ -823,7 +864,7 @@ void MONEAT::mutateSystem(MNIndividual *original)
         std::vector<MNEdge *> new_edges = original->createNode();
         for (int i=0; i<new_edges.size(); i++) {
             InnovationInfo *newInfo = new InnovationInfo(new_edges[i]);
-            assignInnovationNumberToAttachment(newInfo);
+            assignInnovationNumberToGene(newInfo);
             delete newInfo;
         }
     }
@@ -832,7 +873,7 @@ void MONEAT::mutateSystem(MNIndividual *original)
 
 
 
-void MONEAT::assignInnovationNumberToAttachment(InnovationInfo *i){
+void MONEAT::assignInnovationNumberToGene(InnovationInfo *i){
     // have we already created this 'innovation' in this generation?
     pointer_values_equal<InnovationInfo> pred = {i};
     std::vector<InnovationInfo *>::iterator it = std::find_if(newConnections.begin(), newConnections.end(), pred);
@@ -848,7 +889,6 @@ void MONEAT::assignInnovationNumberToAttachment(InnovationInfo *i){
         found = *it;
     }
     i->innovationNumber = found->innovationNumber;
-    
 }
 
 void MONEAT::logPopulationStatistics()

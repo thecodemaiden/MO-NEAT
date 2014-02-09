@@ -56,6 +56,7 @@ class MONEAT {
 protected:
     std::vector<InnovationInfo *> newConnections;
     std::vector<SystemInfo *> population;
+    std::vector<SystemInfo *> archive;
     std::vector<NEATSpecies>speciesList;
 
     int populationSize;
@@ -77,7 +78,7 @@ protected:
     virtual MNIndividual *combineSystems(SystemInfo *sys1, SystemInfo *sys2);
     virtual double genomeDistance( MNIndividual *sys1,  MNIndividual *sys2);
 
-    virtual void assignInnovationNumberToAttachment(InnovationInfo *i);
+    virtual void assignInnovationNumberToGene(InnovationInfo *i);
     
     // overriden functions cannot be called in constructors, so this is called on the first tick();
     virtual void prepareInitialPopulation();
