@@ -17,6 +17,8 @@
 		E249A5F71880422E009DFEBA /* BasicNN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC533187C544100AAA3DA /* BasicNN.cpp */; };
 		E249A5F818804234009DFEBA /* ExampleGoals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */; };
 		E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */; };
+		E2B6CED218A9D85200691C9B /* BaseNEAT.h in Headers */ = {isa = PBXBuildFile; fileRef = E2B6CED118A9D84800691C9B /* BaseNEAT.h */; };
+		E2B6CED418A9D92300691C9B /* BaseNEAT.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E2B6CED318A9D92300691C9B /* BaseNEAT.cpp */; };
 		E2E6B2E818A7FF46003AC5CB /* SPaNEAT.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E2E6B2E618A7FF46003AC5CB /* SPaNEAT.cpp */; };
 		E2E6B2E918A7FF46003AC5CB /* SPaNEAT.h in Headers */ = {isa = PBXBuildFile; fileRef = E2E6B2E718A7FF46003AC5CB /* SPaNEAT.h */; };
 		E2E6B2EB18A7FFA6003AC5CB /* NEATCommon.h in Headers */ = {isa = PBXBuildFile; fileRef = E2E6B2EA18A7FF94003AC5CB /* NEATCommon.h */; };
@@ -53,6 +55,8 @@
 		E249A5EB187E154D009DFEBA /* NeatBoxTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NeatBoxTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E249A5ED187E154D009DFEBA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = NeatBoxTest.1; sourceTree = "<group>"; };
+		E2B6CED118A9D84800691C9B /* BaseNEAT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BaseNEAT.h; sourceTree = "<group>"; };
+		E2B6CED318A9D92300691C9B /* BaseNEAT.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BaseNEAT.cpp; sourceTree = "<group>"; };
 		E2E6B2E618A7FF46003AC5CB /* SPaNEAT.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SPaNEAT.cpp; sourceTree = "<group>"; };
 		E2E6B2E718A7FF46003AC5CB /* SPaNEAT.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SPaNEAT.h; sourceTree = "<group>"; };
 		E2E6B2EA18A7FF94003AC5CB /* NEATCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NEATCommon.h; sourceTree = "<group>"; };
@@ -122,6 +126,8 @@
 		E20CC52B187C446800AAA3DA /* Base Algorithm */ = {
 			isa = PBXGroup;
 			children = (
+				E2B6CED118A9D84800691C9B /* BaseNEAT.h */,
+				E2B6CED318A9D92300691C9B /* BaseNEAT.cpp */,
 				E20CC52D187C447E00AAA3DA /* MONEAT.h */,
 				E20CC52C187C447E00AAA3DA /* MONEAT.cpp */,
 				E2FF67B718A04D4400DA0490 /* MNIndividual.h */,
@@ -165,6 +171,7 @@
 			files = (
 				E2E6B2E918A7FF46003AC5CB /* SPaNEAT.h in Headers */,
 				E21362751881D83000A8DCF1 /* NBUtils.h in Headers */,
+				E2B6CED218A9D85200691C9B /* BaseNEAT.h in Headers */,
 				E20CC52F187C447E00AAA3DA /* MONEAT.h in Headers */,
 				E2E6B2EB18A7FFA6003AC5CB /* NEATCommon.h in Headers */,
 			);
@@ -239,6 +246,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E2B6CED418A9D92300691C9B /* BaseNEAT.cpp in Sources */,
 				E249A5F5187E5206009DFEBA /* MONEAT.cpp in Sources */,
 				E21362741881D83000A8DCF1 /* NBUtils.cpp in Sources */,
 				E2E6B2E818A7FF46003AC5CB /* SPaNEAT.cpp in Sources */,

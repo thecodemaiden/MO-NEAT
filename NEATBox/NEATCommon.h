@@ -10,6 +10,8 @@
 #define NEATBox_NEATCommon_h
 
 #include <map>
+#include "MNIndividual.h"
+#include <cmath>
 
 struct SystemInfo {
 public:
@@ -37,11 +39,6 @@ struct NEATSpecies {
     std::vector<SystemInfo *>members;
     double totalSharedFitness;
     int speciesNumber; // for data collection
-};
-
-class NEATExtendedSpecies : public NEATSpecies {
-public:
-    std::map<NEATExtendedSpecies *, double> speciesDist;
 };
 
 // SO DIRTY
