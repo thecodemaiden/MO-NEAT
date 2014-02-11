@@ -14,5 +14,6 @@
 double normallyDistributed(double mean=0, double sd = 1);
 
 long uniformlyDistributed(long upperBound);
+double uniformProbability();
 bool isUnreasonable(double d);
 #endif /* defined(__NEATBox__NBUtils__) */

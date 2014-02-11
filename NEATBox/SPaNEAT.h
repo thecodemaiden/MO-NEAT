@@ -1,13 +1,27 @@
 //
-//  MONEAT.h
+//  SPaNEAT.h
+//  NEATBox
+//
+//  Created by Adeola Bannis on 2/9/14.
+//  Copyright (c) 2014 Adeola Bannis. All rights reserved.
+//
+
+#ifndef __NEATBox__SPaNEAT__
+#define __NEATBox__SPaNEAT__
+
+#include <iostream>
+
+
+//
+//  SPaNEAT.h
 //  SystemGenerator
 //
 //  Created by Adeola Bannis on 11/4/13.
 //
 //
 
-#ifndef __SystemGenerator__MONEAT__
-#define __SystemGenerator__MONEAT__
+#ifndef __SystemGenerator__SPaNEAT__
+#define __SystemGenerator__SPaNEAT__
 
 #include <vector>
 #include <fstream>
@@ -23,51 +37,60 @@
 
 #include "NEATCommon.h"
 
-class MONEAT {
+struct SPSystemInfo : public SystemInfo
+{
+    std::vector<double> distances;
+    
+    SPSystemInfo(MNIndividual *i):SystemInfo(i) {}
+    
+    SPSystemInfo(const SPSystemInfo &other)
+    :SystemInfo(other),
+    distances(other.distances)
+    {}
+};
+
+class SPaNEAT {
 protected:
     std::vector<InnovationInfo *> newConnections;
-    std::vector<SystemInfo *> population;
-    std::vector<SystemInfo *> archive;
-    std::vector<NEATExtendedSpecies *>speciesList;
-
-    int populationSize;
-    int stagnantGenerations;
-    int maxStagnation;
-    int maxGenerations;
+    std::vector<SPSystemInfo *> population;
+    std::vector<SPSystemInfo *> archive;
+    
+    long populationSize;
+//    int stagnantGenerations;
+//    int maxStagnation;
+    long maxGenerations;
     
     long generations;
     
     long archiveSize;
- 
+    
     void spawnNextGeneration(); // recombine species to get enough children then mutate each one
-
+    
     void mutateSystem(MNIndividual  *original); // does not make a copy
     
     // finds the Pareto fronts of individuals
     void rankSystems();
-
+    
     virtual MNIndividual *combineSystems(SystemInfo *sys1, SystemInfo *sys2);
     virtual double genomeDistance( MNIndividual *sys1,  MNIndividual *sys2);
-
+    
     virtual void assignInnovationNumberToGene(InnovationInfo *i);
     
     // overriden functions cannot be called in constructors, so this is called on the first tick();
     virtual void prepareInitialPopulation();
-        
+    
     void logPopulationStatistics();
-    NEATExtendedSpecies *chooseCompatibleSpecies(NEATExtendedSpecies *species, double maxDist); // fitness proportionate selection
     
     std::vector<InnovationInfo *> orderedConnectionGenome(std::vector<MNEdge *> genome);
     
-    std::vector<SystemInfo *> bestIndividuals; // the optimal front
-
 public:
-    MONEAT(int populationSize, int maxGenerations, int maxStagnation);
-    ~MONEAT();
+    SPaNEAT(long populationSize, long archiveSize, long maxGenerations=500);
+    ~SPaNEAT();
     
     // notice that this cannot be overriden.
     bool tick();
     std::vector<SystemInfo *> optimalSolutions();
+
 #pragma mark - Function pointers - MUST BE SET OR ELSE
     // MUST SET
     
@@ -75,8 +98,7 @@ public:
     std::vector<EvaluationFunction> evaluationFunctions;
     
     MNIndividual *(*createInitialIndividual)(void); // the smallest/starting individual
-#pragma mark - 
-    
+#pragma mark -
     long getNumberOfIterations();
     
 #pragma mark - Tuning parameters
@@ -102,10 +124,11 @@ public:
 private:
     MNIndividual *origin; // to find distance of species from start
     int nextInnovationNumber;
-    int nextSpeciesNumber;
-    void speciate(); // divide everything into species
-    void updateSharedFitnesses();
 };
 
 
-#endif /* defined(__SystemGenerator__MONEAT__) */
+#endif /* defined(__SystemGenerator__SPaNEAT__) */
+
+
+
+#endif /* defined(__NEATBox__SPaNEAT__) */

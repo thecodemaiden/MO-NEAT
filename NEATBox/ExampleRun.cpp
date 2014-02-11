@@ -11,7 +11,10 @@
 #include "BasicNN.h"
 #include "ExampleGoals.h"
 
-#include "MONEAT.cpp"
+#include "SPaNEAT.h"
+#include "MONEAT.h"
+
+#include "assert.h"
 
 #include <vector>
 
@@ -95,9 +98,47 @@ void runMult23SOTestTrain()
     delete algo;
 }
 
+//void runMult23MOTestTrain()
+//{
+//    MONEAT  *algo = new MONEAT (25, 200, 50);
+//    algo->createInitialIndividual = &createMult3Network;
+//    algo->evaluationFunctions.push_back(&trainMult2);
+//    algo->evaluationFunctions.push_back(&trainMult3);
+//    
+//    algo->w_disjoint = 4.0;
+//    algo->w_excess = 4.0;
+//    algo->w_matching = 2.0;
+//    algo->w_matching_node = 2.0;
+//    
+//    algo->d_threshold = 2.0;
+//    
+//    while (!algo->tick());
+//    
+//    std::vector<SystemInfo *>winners = algo->optimalSolutions();
+//    assert(winners.size() > 0);
+//    std::cout << winners.size() << " optimal solutions found.\n";
+//    
+//    SystemInfo *bestSystem = NULL;
+//    double min_diff = INFINITY;
+//    for (std::vector<SystemInfo *>::iterator it = winners.begin(); it!=winners.end(); it++) {
+//        double d= fabs((*it)->fitnesses[0] - (*it)->fitnesses[1]);
+//        if (d < min_diff) {
+//            bestSystem = *it;
+//            min_diff = d;
+//        }
+//    }
+//    
+//    BasicNN *winner = dynamic_cast<BasicNN *>(bestSystem->individual);
+//    std::cout << "2 score: " << testMult2(winner) <<"\n";
+//    std::cout << "3 score: " << testMult3(winner) <<"\n";
+//    
+//    delete algo;
+//}
+
 void runMult23MOTestTrain()
 {
-    MONEAT  *algo = new MONEAT (25, 200, 50);
+   // SPaNEAT  *algo = new SPaNEAT (100, 25, 100);
+    MONEAT  *algo = new MONEAT (100, 15, 100);
     algo->createInitialIndividual = &createMult3Network;
     algo->evaluationFunctions.push_back(&trainMult2);
     algo->evaluationFunctions.push_back(&trainMult3);
@@ -107,11 +148,11 @@ void runMult23MOTestTrain()
     algo->w_matching = 2.0;
     algo->w_matching_node = 2.0;
     
-    algo->d_threshold = 2.0;
+    algo->d_threshold = 3.0;
     
     while (!algo->tick());
     
-    std::vector<SystemInfo *>winners = algo->bestIndividuals;
+    std::vector<SystemInfo *>winners = algo->optimalSolutions();
     assert(winners.size() > 0);
     std::cout << winners.size() << " optimal solutions found.\n";
     
@@ -119,6 +160,7 @@ void runMult23MOTestTrain()
     double min_diff = INFINITY;
     for (std::vector<SystemInfo *>::iterator it = winners.begin(); it!=winners.end(); it++) {
         double d= fabs((*it)->fitnesses[0] - (*it)->fitnesses[1]);
+        
         if (d < min_diff) {
             bestSystem = *it;
             min_diff = d;
@@ -131,5 +173,4 @@ void runMult23MOTestTrain()
     
     delete algo;
 }
-
 

@@ -13,6 +13,8 @@
 
 void runXorExample();
 void runParityExample();
+
 void runMult23SOTestTrain();
+
 void runMult23MOTestTrain();
 #endif /* defined(__NEATBox__ExampleRun__) */

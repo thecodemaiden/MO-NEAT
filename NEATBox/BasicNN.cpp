@@ -301,8 +301,8 @@ Edge *BasicNN::createConnection()
         }
     }
 
-    Edge *toReturn = &*edgePos;
-    return toReturn;
+    Edge toReturn = *edgePos;
+    return new Edge(toReturn);
 }
 
 double BasicNN::connectionDifference(MNEdge *e1, MNEdge *e2)

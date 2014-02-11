@@ -18,65 +18,13 @@
 
 #include "NBUtils.h"
 
-#define RESTRICT_SPECIES 1
-#define ROULETTE_SELECT 0
-#define INTERSPECIES 0
+#define RESTRICT_SPECIES 0
+#define ROULETTE_SELECT 1
+#define INTERSPECIES 1
 
 #define TIGHT_CLUSTERS 0
 
 #define USE_NODE_DIFF 1
-
-// SO DIRTY
-struct InnovationInfo {
-//private:
-    InnovationInfo(const InnovationInfo& other)
-    :data(other.data), innovationNumber(other.innovationNumber), wasCloned(false)
-    {
-        
-    }
-//public:
-    MNEdge *data;
-    bool wasCloned;
-    int innovationNumber;
-    
-    InnovationInfo(MNEdge *e)
-    :data(e->clone()),innovationNumber(-1), wasCloned(true){}
-    
-    InnovationInfo *clone()
-    {
-        InnovationInfo *newOne = new InnovationInfo(data->clone());
-        newOne->innovationNumber = innovationNumber;
-        newOne->wasCloned = true;
-        return newOne;
-    }
-    
-    
-    ~InnovationInfo(){
-        if (wasCloned)
-            delete data;
-    }
-    
-    bool operator==(const InnovationInfo& other)const {
-        return *(data) == *(other.data);
-    }
-    
-    bool operator==(const MNEdge& other)const {
-        return *data == other;
-    }
-};
-
-/// OH GOD I HATE C++ FUNCTORSSSS
-// http://stackoverflow.com/questions/258871/how-to-use-find-algorithm-with-a-vector-of-pointers-to-objects-in-c
-template <typename T>
-struct pointer_values_equal
-{
-    const T* to_find;
-    
-    bool operator()(const T* other) const
-    {
-        return *to_find == *other;
-    }
-};
 
 MONEAT::MONEAT(int populationSize, int maxGenerations, int maxStagnation)
 :populationSize(populationSize), maxStagnation(maxStagnation), maxGenerations(maxGenerations)
@@ -84,7 +32,6 @@ MONEAT::MONEAT(int populationSize, int maxGenerations, int maxStagnation)
 {
     nextInnovationNumber = 1;
     nextSpeciesNumber = 1;
-    allTimeBestFitness = -INFINITY;
     generations = 0;
     stagnantGenerations = 0;
     origin = NULL;
@@ -93,14 +40,17 @@ MONEAT::MONEAT(int populationSize, int maxGenerations, int maxStagnation)
 MONEAT::~MONEAT()
 {
     //empty the species lists
-    std::vector<NEATSpecies>::iterator speciesIterator = speciesList.begin();
+    std::vector<NEATExtendedSpecies *>::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
-        std::vector<SystemInfo *> members = speciesIterator->members;
-         std::vector<SystemInfo *>::iterator it = members.begin();
-        while (it != members.end()) {
-            it = members.erase(it);
-        }
+        delete *speciesIterator;
         speciesIterator = speciesList.erase(speciesIterator);
+    }
+    
+    // empty the population
+    std::vector<SystemInfo *>::iterator it = population.begin();
+    while (it != population.end()) {
+        delete *it;
+        it = population.erase(it);
     }
     delete origin;
 }
@@ -157,7 +107,6 @@ MNIndividual *MONEAT::combineSystems(SystemInfo *sys1, SystemInfo *sys2)
     std::set_intersection(genome2.begin(), genome2.end(), genome1.begin(), genome1.end(),std::back_inserter(matchingGenes2), compareInnovationNumbers);
     
     
-    
     // first we handle the matching genes
     for (int i=0; i<matchingGenes1.size(); i++){
         InnovationInfo *gene = matchingGenes1[i];
@@ -181,14 +130,14 @@ MNIndividual *MONEAT::combineSystems(SystemInfo *sys1, SystemInfo *sys2)
     
     
     // then the disjoint genes
-    if (sys1->rankFitness >= sys2->rankFitness) {
+    if (sys1->rankFitness <= sys2->rankFitness) {
         for (int i=0; i<disjointandExcess1.size(); i++) {
             newChild->addGeneFromParentSystem(sys1->individual, disjointandExcess1[i]->data);
         }
     }
     
     // if rankFitness is equal, include all genes
-    if (sys2->rankFitness >= sys1->rankFitness) {
+    if (sys2->rankFitness <= sys1->rankFitness) {
         for (int i=0; i<disjointandExcess2.size(); i++) {
             newChild->addGeneFromParentSystem(sys2->individual, disjointandExcess2[i]->data);
         }
@@ -204,63 +153,95 @@ MNIndividual *MONEAT::combineSystems(SystemInfo *sys1, SystemInfo *sys2)
         delete *dit;
         dit = genome2.erase(dit);
     }
-
+    
     
     return newChild;
 }
 
+static bool distanceCompare(const std::pair<NEATExtendedSpecies *, double> &e1, const std::pair<NEATExtendedSpecies *, double> &e2)
+{
+    return e1.second < e2.second;
+}
+
 void MONEAT::spawnNextGeneration()
 {
-    double  rankFitnessSum = 0.0;
-    typename std::vector<SystemInfo *>::iterator it = population.begin();
-    while (it != population.end()) {
-        rankFitnessSum += (*it)->rankFitness;
-        it++;
+ 
+#if INTERSPECIES
+    double maxSpeciesDist = -INFINITY;
+    for (std::vector<NEATExtendedSpecies *>::iterator speciesIt = speciesList.begin(); speciesIt != speciesList.end(); speciesIt++) {
+        double maxD = std::max_element((*speciesIt)->speciesDist.begin(), (*speciesIt)->speciesDist.end(), distanceCompare)->second;
+        if (maxD > maxSpeciesDist)
+            maxSpeciesDist = maxD;
     }
-
+#endif
+    
     // create population children through recombination
     std::vector<SystemInfo *>newGeneration;
     
-     std::vector<NEATSpecies>::iterator speciesIt = speciesList.begin();
+    
+    std::vector<NEATExtendedSpecies *>::iterator speciesIt = speciesList.begin();
     while(speciesIt != speciesList.end()) {
         // selectionnnnn
-        NEATSpecies breedingSpecies = *speciesIt;//chooseBreedingSpecies(rankFitnessSum);
+        NEATExtendedSpecies *breedingSpecies = *speciesIt;
         std::vector<SystemInfo *>newMembers;
         
-        std::vector<SystemInfo *>individuals = breedingSpecies.members;
+        std::vector<SystemInfo *>individuals = breedingSpecies->members;
         
         while (newMembers.size() < individuals.size()) {
+            
             SystemInfo *p1;
             SystemInfo *p2;
             
             MNIndividual *child;
             
-            int parentPosition = arc4random_uniform((int)individuals.size());
-            p1 = (individuals[parentPosition]);
-#if INTERSPECIES
-            double interspecies_mate = (double)rand()/RAND_MAX;
-            if (stagnantGenerations > maxStagnation/3 || interspecies_mate < 0.1) {
-                breedingSpecies = chooseBreedingSpecies(rankFitnessSum);
-                individuals = breedingSpecies.members;
-                
-                int parentPosition = arc4random_uniform((int)individuals.size());
-                p2 = (individuals[parentPosition]);
-            } else {
-#endif
-                if (individuals.size() > 1) {
-                    
-                    int parentPosition2;
-                    do {
-                        parentPosition2 = arc4random_uniform((int)individuals.size());
-                    } while (parentPosition2 == parentPosition);
-                    p2 = (individuals[parentPosition2]);
-                } else {
-                    p2 = p1;
-                }
-#if INTERSPECIES
+#if ROULETTE_SELECT
+            //stochastic acceptance
+            bool accepted = false;
+            while (!accepted) {
+                p1 = individuals[uniformlyDistributed(individuals.size())];
+                accepted = (uniformProbability() < p1->rankFitness);
             }
+            
+#if INTERSPECIES
+            std::vector<SystemInfo *> individuals2 = chooseCompatibleSpecies(breedingSpecies, maxSpeciesDist)->members;
+#else
+            std::vector<SystemInfo *>individuals2 = individuals;
 #endif
             
+            accepted = false;
+            while (!accepted) {
+                p2 = individuals2[uniformlyDistributed(individuals2.size())];
+                accepted = (uniformProbability() < p2->rankFitness);
+            }
+            
+#else
+            const int tournamentSize = 3;
+  
+#if INTERSPECIES
+            std::vector<SystemInfo *> individuals2 = chooseCompatibleSpecies(breedingSpecies, maxSpeciesDist)->members;
+#else
+            std::vector<SystemInfo *>individuals2 = individuals;
+#endif
+            
+            // tournament
+            p1 = (individuals[uniformlyDistributed(individuals.size())]);
+            p2 = (individuals2[uniformlyDistributed(individuals2.size())]);
+            
+            
+            if (individuals.size() > tournamentSize) {
+                for (int i=0; i<tournamentSize; i++) {
+                    SystemInfo *contender = individuals[uniformlyDistributed(individuals.size())];
+                    if (contender->rankFitness > p1->rankFitness)
+                        p1 = contender;
+                }
+                
+                for (int i=0; i<tournamentSize; i++) {
+                    SystemInfo *contender = individuals2[uniformlyDistributed(individuals2.size())];
+                    if (contender->rankFitness > p2->rankFitness)
+                        p2 = contender;
+                }
+            }
+#endif
             child = combineSystems(p1, p2);
             // mutate the new individual (maybe)
             mutateSystem(child);
@@ -269,56 +250,42 @@ void MONEAT::spawnNextGeneration()
             newGeneration.push_back(i);
             newMembers.push_back(i);
         }
-        speciesIt->members.insert(speciesIt->members.end(), newMembers.begin(), newMembers.end());
+        (*speciesIt)->members.insert((*speciesIt)->members.end(), newMembers.begin(), newMembers.end());
         speciesIt++;
     }
     // add the original population too
     population.insert(population.end(), newGeneration.begin(), newGeneration.end());
-
-//    population = newGeneration;
+    
 }
 
-NEATSpecies &MONEAT::chooseBreedingSpecies(double totalFitness)
-{
-    
-    // choose a species according to species fitness
-    // then chose parents at random from within that species
-    
-    // Assume sorted population
-    double selector = ((double )rand()/RAND_MAX);
-    
-    typename std::vector<NEATSpecies >::iterator it = speciesList.begin();
-    double  cumulativeFitness = 0.0;
-    while (it != speciesList.end()) {
-        cumulativeFitness += it->totalSharedFitness/totalFitness;
-        if (cumulativeFitness >= selector) {
-            break;
-        }
-        it++;
+NEATExtendedSpecies *MONEAT::chooseCompatibleSpecies(NEATExtendedSpecies *species, double maxDistance){
+    NEATExtendedSpecies *chosen = NULL;
+    bool accepted = false;
+    while (!accepted) {
+        chosen = speciesList[uniformlyDistributed(speciesList.size())];
+        double d = species->speciesDist[chosen];
+        accepted = (uniformProbability() < ((maxDistance - d)/maxDistance));
     }
     
-    if (it == speciesList.end())
-        it--;
-    
-    return *it;
+    return chosen;
 }
 
 
 void MONEAT::speciate()
 {
-     std::vector<SystemInfo *>::iterator populationIter = population.begin();
+    std::vector<SystemInfo *>::iterator populationIter = population.begin();
     while (populationIter != population.end()) {
-
+        
         // assign to species
         bool added= false;
 #if TIGHT_CLUSTERS
         double smallestDiff = INFINITY;
-        std::vector<NEATSpecies>::iterator chosenSpecies = speciesList.end();
+        std::vector<NEATExtendedSpecies *>::iterator chosenSpecies = speciesList.end();
 #endif
         
-         std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
+        std::vector<NEATExtendedSpecies *>::iterator speciesIterator = speciesList.begin();
         while (speciesIterator != speciesList.end()) {
-            double  distance = fabs(genomeDistance((*populationIter)->individual, speciesIterator->representative));
+            double  distance = fabs(genomeDistance((*populationIter)->individual, (*speciesIterator)->representative));
             if (distance < d_threshold) {
 #if TIGHT_CLUSTERS
                 if (distance < smallestDiff) {
@@ -327,7 +294,7 @@ void MONEAT::speciate()
                 }
 #else
                 added = true;
-                speciesIterator->members.push_back((*populationIter));
+                (*speciesIterator)->members.push_back((*populationIter));
                 break;
 #endif
             }
@@ -336,17 +303,17 @@ void MONEAT::speciate()
 #if TIGHT_CLUSTERS
         if (chosenSpecies != speciesList.end()) {
             added = true;
-            chosenSpecies->members.push_back((*populationIter));
+            (*chosenSpecies)->members.push_back((*populationIter));
         }
 #endif
         
         if (!added) {
             // new species!!
-            NEATSpecies s = NEATSpecies();
-            s.representative = (*populationIter)->individual->clone();
-            s.members.push_back(*populationIter);
+            NEATExtendedSpecies *s = new NEATExtendedSpecies();
+            s->representative = (*populationIter)->individual->clone();
+            s->members.push_back(*populationIter);
             speciesList.push_back(s);
-            s.speciesNumber = nextSpeciesNumber++;
+            s->speciesNumber = nextSpeciesNumber++;
         }
         
         populationIter++;
@@ -360,18 +327,19 @@ void MONEAT::updateSharedFitnesses()
     
     // for each species, copy a random current member to be the representative for the next generation, and adjust the fitnesses for sharing
     // kill off a species with no members
-    typename std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
+    std::vector<NEATExtendedSpecies *>::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
         // pick a new rep
-        std::vector<SystemInfo *> members = speciesIterator->members;
+        std::vector<SystemInfo *> members = (*speciesIterator)->members;
         if (members.size() == 0) {
-            NEATSpecies extinctSpecies = *speciesIterator;
+            NEATExtendedSpecies *extinctSpecies = *speciesIterator;
+            delete extinctSpecies;
             speciesIterator = speciesList.erase(speciesIterator);
         } else {
             long index = uniformlyDistributed(members.size());
             MNIndividual *rep = (members[index]->individual);
-            delete speciesIterator->representative;
-            speciesIterator->representative = rep->clone();
+            delete (*speciesIterator)->representative;
+            (*speciesIterator)->representative = rep->clone();
             
             // fprintf(stderr, "\tSpecies %d: %ld members\n", ++i, members.size());
             
@@ -379,16 +347,28 @@ void MONEAT::updateSharedFitnesses()
             double  totalFitness = 0.0;
             typename std::vector<SystemInfo *>::iterator memberIterator = members.begin();
             while (memberIterator != members.end()) {
-                assert((*memberIterator)->rankFitness != -INFINITY);
-                (*memberIterator)->rankFitness /= members.size();
-                totalFitness += (*memberIterator)->rankFitness;
+                totalFitness += (*memberIterator)->rankFitness/members.size();
                 memberIterator++;
             }
             
-            speciesIterator->totalSharedFitness = totalFitness;
+            (*speciesIterator)->totalSharedFitness = totalFitness;
+            (*speciesIterator)->speciesDist.clear();
             speciesIterator++;
         }
     }
+    
+    // now update the species distance maps
+    for (speciesIterator = speciesList.begin();speciesIterator != speciesList.end(); speciesIterator++) {
+        NEATExtendedSpecies *s1 = *speciesIterator;
+        for (std::vector<NEATExtendedSpecies *>::iterator innerIter =speciesIterator+1; innerIter != speciesList.end(); innerIter++) {
+            NEATExtendedSpecies *s2 = *innerIter;
+            
+            double d = genomeDistance(s1->representative, s2->representative);
+            s1->speciesDist[s2] = d;
+            s2->speciesDist[s1] = d;
+        }
+    }
+    
 }
 
 // unlike base NEAT, also take node differences into account
@@ -477,7 +457,7 @@ double  MONEAT::genomeDistance( MNIndividual *sys1,  MNIndividual *sys2)
     
     //    double  d = w_disjoint*nDisjoint + w_excess*nExcess + w_matching*matchingDiff;
 #if USE_NODE_DIFF
-      d+= + w_matching_node*diff_node/moreNodes;
+    d+= + w_matching_node*diff_node/moreNodes;
     // d += w_matching_node*diff_node
 #endif
     
@@ -491,7 +471,7 @@ double  MONEAT::genomeDistance( MNIndividual *sys1,  MNIndividual *sys2)
         delete *dit;
         dit = genome2.erase(dit);
     }
-
+    
     
     return d;
 }
@@ -502,13 +482,13 @@ void MONEAT::prepareInitialPopulation()
     // we need to index the genome of the 'base' system
     origin = createInitialIndividual();
     std::vector<InnovationInfo *> baseGenome = orderedConnectionGenome(origin->connectionGenome());
-   
+    
     // clean out the allocated InnovationInfos
     for (std::vector<InnovationInfo *>::iterator dit = baseGenome.begin(); dit != baseGenome.end();) {
         delete *dit;
         dit = baseGenome.erase(dit);
     }
-
+    
     
     // mutate the initial system to get an initial population
     while (population.size() < populationSize) {
@@ -528,7 +508,7 @@ static int domination(SystemInfo *s1, SystemInfo *s2)
     
     std::vector<double>::iterator fitnessIter1 = s1->fitnesses.begin();
     std::vector<double>::iterator fitnessIter2 = s2->fitnesses.begin();
-
+    
     while (fitnessIter1 != s1->fitnesses.end()) {
         if (*fitnessIter1 > *fitnessIter2)
             firstDominates = false;
@@ -551,15 +531,12 @@ static int domination(SystemInfo *s1, SystemInfo *s2)
     return 0;
 }
 
-
 void MONEAT::rankSystems()
 {
-    typename std::vector<SystemInfo *>::iterator popIter;
+    std::vector<SystemInfo *>::iterator popIter;
     
     std::map<SystemInfo *, std::vector<SystemInfo *> > dominationMap;
     
-    int counted = 0;
-
     std::vector<SystemInfo *> bestFront;
     for (popIter = population.begin(); popIter != population.end(); popIter++) {
         std::vector<SystemInfo *> dominated;
@@ -582,7 +559,6 @@ void MONEAT::rankSystems()
             }
         }
         if (sys->dominationCount == 0) {
-            counted++;
             sys->rankFitness = 1.0;
             bestFront.push_back(sys);
         }
@@ -594,38 +570,33 @@ void MONEAT::rankSystems()
     std::vector<SystemInfo *> currentFront = bestFront;
     while (!currentFront.empty()) {
         std::vector<SystemInfo *> nextFront;
-        typename std::vector<SystemInfo *>::iterator frontIterator;
+        std::vector<SystemInfo *>::iterator frontIterator;
         
         for (frontIterator = currentFront.begin(); frontIterator != currentFront.end(); frontIterator++) {
             std::vector<SystemInfo *> dominated = dominationMap[*frontIterator];
-            typename std::vector<SystemInfo *>::iterator it;
+            std::vector<SystemInfo *>::iterator it;
             for (it = dominated.begin(); it != dominated.end(); it++) {
                 SystemInfo *s = *it;
                 s->dominationCount -= 1;
-               // assert(s->dominationCount >=0);
+                // assert(s->dominationCount >=0);
                 if (s->dominationCount == 0) {
                     s->rankFitness = 1.0/(currentRank+1);
                     nextFront.push_back(s);
-                    counted++;
                 }
             }
         }
-
+        
         currentRank += 1;
         currentFront = nextFront;
     }
     
-    assert(counted == population.size());
-
     std::cout << currentRank << " ranks examined.\n";
-    
-    //return bestFront;
 }
 
 // descending, not ascending, order
-static bool compareSpeciesFitness(const NEATSpecies& s1, const NEATSpecies& s2)
+static bool compareSpeciesFitness( NEATExtendedSpecies *s1, const NEATExtendedSpecies *s2)
 {
-    return s1.totalSharedFitness > s2.totalSharedFitness;
+    return s1->totalSharedFitness > s2->totalSharedFitness;
 }
 
 bool MONEAT::tick()
@@ -633,7 +604,7 @@ bool MONEAT::tick()
     bool first_run = false;
     if (population.size() == 0) {
         prepareInitialPopulation();
-     
+        
         first_run = true;
     }
     
@@ -652,65 +623,41 @@ bool MONEAT::tick()
     rankSystems();
     
     bool last_run =  (generations >= maxGenerations) ;
-
-    
-#if !RESTRICT_SPECIES
-   {
-       // clear species membership lists
-       typename std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
-       while (speciesIterator != speciesList.end()) {
-           speciesIterator->members.clear();
-           speciesIterator++;
-       }
-   }
-#endif
     
 #if RESTRICT_SPECIES
-    if (first_run) {
-#endif
-        speciate();
-#if RESTRICT_SPECIES
-    } else {
-    
-          bool regroup = false;
-          if (speciesList.size() < 10 || stagnantGenerations > maxStagnation/5) {
-              regroup = true;
-              d_threshold /= 1.05;
-          }
-      
-          if (speciesList.size() > 20) {
-              regroup = true;
-              d_threshold *= 1.05;
-          }
-      
-          if (regroup) {
-              // empty the species member lists and remake them
-              speciesList.clear();
-              speciate();
-          }
-          
+    {
+        // clear species membership lists
+        std::vector<NEATExtendedSpecies *>::iterator speciesIterator = speciesList.begin();
+        while (speciesIterator != speciesList.end()) {
+            (*speciesIterator)->members.clear();
+            speciesIterator++;
+        }
     }
+#else
+    speciesList.clear();
 #endif
-    updateSharedFitnesses();
-
     
-    double  bestFitness = -INFINITY; // we want zero fitness
+    speciate();
+    
+    updateSharedFitnesses();
+    
+    
     // figure out how many of each species to save
     double  sharedFitnessSum = 0.0;
     for (int i=0; i<speciesList.size(); i++) {
-        sharedFitnessSum += speciesList[i].totalSharedFitness;
+        sharedFitnessSum += speciesList[i]->totalSharedFitness;
     }
     
     std::vector<SystemInfo *> individualsToSave;
     // sort the species to ensure we keep the best
     std::sort(speciesList.begin(), speciesList.end(), compareSpeciesFitness);
     
-    std::vector<NEATSpecies >::iterator speciesIterator = speciesList.begin();
+    std::vector<NEATExtendedSpecies *>::iterator speciesIterator = speciesList.begin();
     while (speciesIterator != speciesList.end()) {
-        std::vector<SystemInfo *> members =speciesIterator->members;
+        std::vector<SystemInfo *> members = (*speciesIterator)->members;
         size_t numMembers = members.size();
-
-        double  proportionToSave = (speciesIterator->totalSharedFitness)/sharedFitnessSum;
+        
+        double  proportionToSave = ((*speciesIterator)->totalSharedFitness)/sharedFitnessSum;
         long numToSave = std::min((size_t)(proportionToSave*populationSize), numMembers);
         
         assert(numToSave >= 0);
@@ -725,52 +672,15 @@ bool MONEAT::tick()
         if (numToSave > 0) {
             std::vector<SystemInfo *> newMembers;
             std::vector<SystemInfo *>::iterator it = members.begin();
-
-#if ROULETTE_SELECT
-            //stochastic universal selection
-
-            double choiceSep = (speciesIterator->totalSharedFitness/numToSave);
-            double pointer = ((double)rand()/RAND_MAX)*choiceSep;
-            std::vector<long> savedPositions;
-            double cumFitness = (*it)->rankFitness;
+            
             while (newMembers.size() < numToSave) {
-                if (cumFitness >= pointer) {
-                    pointer += choiceSep;
-                    
-                    SystemInfo *individual = *it;
-                    
-                    SystemInfo *saved = new SystemInfo(**it);
-                    double  rankFitness = individual->rankFitness * numMembers;
-                    saved->rankFitness = rankFitness;
-                    newMembers.push_back(saved);
-                    individualsToSave.push_back(saved);
-                    if (rankFitness > bestFitness) {
-                        bestFitness = rankFitness;
-                        bestFound = copied;
-                    }
-                    
-                } else {
-                    it++;
-                    assert(it != members.end());
-                    cumFitness += (*it)->rankFitness;
-                }
-            }
-#else
-            while (newMembers.size() < numToSave) {
-                
-                SystemInfo *individual = *it;
                 
                 SystemInfo *saved = new SystemInfo(**it);
-                double  rankFitness = individual->rankFitness * numMembers;
-                saved->rankFitness = rankFitness;
                 newMembers.push_back(saved);
                 individualsToSave.push_back(saved);
-                if (rankFitness > bestFitness) {
-                    bestFitness = rankFitness;
-                }
                 it++;
             }
-#endif
+            
             
             std::vector<SystemInfo *>::iterator deleteIt =  members.begin();
             
@@ -779,39 +689,36 @@ bool MONEAT::tick()
                 deleteIt =  members.erase(deleteIt);
             }
             
-            speciesIterator->members = newMembers;
+            (*speciesIterator)->members = newMembers;
             speciesIterator++;
-
+            
         } else {
             speciesIterator = speciesList.erase(speciesIterator);
- 
+            
         }
         
     }
- 
+    
     
     population = individualsToSave;
     
-    if (bestFitness > allTimeBestFitness)
-        allTimeBestFitness = bestFitness;
     
     // stagnation if fitnesses are within 1% of each other
     
-    if (fabs( 1 - (lastBestFitness/bestFitness)) < .01)
-        stagnantGenerations++;
-    else
-        stagnantGenerations = 0;
     
     generations++;
     
-    lastBestFitness = bestFitness;
-   
     bestIndividuals.clear();
+    
+    const double bestRank = 1;
+    
     // find the top ranking individuals
-     std::vector<SystemInfo *>::iterator it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [](const SystemInfo * elem){return elem->rankFitness == 1.0;});
-    for (; it != individualsToSave.end(); it = std::find_if(++it, individualsToSave.end(), [](const SystemInfo * elem){return elem->rankFitness == 1.0;})) {
+    std::vector<SystemInfo *>::iterator it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [bestRank](const SystemInfo * elem){return elem->rankFitness == bestRank;});
+    for (; it != individualsToSave.end(); it = std::find_if(++it, individualsToSave.end(), [bestRank](const SystemInfo * elem){return elem->rankFitness == bestRank;})) {
         bestIndividuals.push_back(*it);
     }
+    
+    assert(bestIndividuals.size() > 0);
     
     
     if (!last_run) {
@@ -853,7 +760,7 @@ void MONEAT::mutateSystem(MNIndividual *original)
         // insert a new connection
         // update the innovation number
         MNEdge *created = original->createConnection();
-        InnovationInfo *newInfo = new InnovationInfo(created);
+        InnovationInfo *newInfo = new InnovationInfo(created, false);
         assignInnovationNumberToGene(newInfo);
         delete newInfo;
     }
@@ -893,6 +800,11 @@ void MONEAT::assignInnovationNumberToGene(InnovationInfo *i){
 
 void MONEAT::logPopulationStatistics()
 {
-   
+    
+}
+
+std::vector<SystemInfo *> MONEAT::optimalSolutions()
+{
+    return bestIndividuals;
 }
 
