@@ -36,20 +36,16 @@ protected:
 
     int stagnantGenerations;
     int maxStagnation;
-    
-    
  
     void spawnNextGeneration(); // recombine species to get enough children then mutate each one
     
     // finds the Pareto fronts of individuals
     void rankSystems();
 
-    
     // overriden functions cannot be called in constructors, so this is called on the first tick();
     virtual void prepareInitialPopulation();
         
     NEATExtendedSpecies *chooseCompatibleSpecies(NEATExtendedSpecies *species, double maxDist); // fitness proportionate selection
-    
     
 public:
     MONEAT(int populationSize, int maxGenerations, int maxStagnation);

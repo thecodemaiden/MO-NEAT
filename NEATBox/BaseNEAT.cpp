@@ -8,6 +8,9 @@
 
 #include "BaseNEAT.h"
 #include "NBUtils.h"
+
+#define USE_NODE_DIFF 1
+
 BaseNEAT::BaseNEAT(long populationSize, long maxGenerations)
 :populationSize(populationSize), maxGenerations(maxGenerations),
 nextInnovationNumber(1), generations(0), origin(NULL)
@@ -55,7 +58,7 @@ void BaseNEAT::mutateSystem(MNIndividual  *original)
         // add a node somewhere if possible
         std::vector<MNEdge *> new_edges = original->createNode();
         for (int i=0; i<new_edges.size(); i++) {
-            InnovationInfo *newInfo = new InnovationInfo(new_edges[i]);
+            InnovationInfo *newInfo = new InnovationInfo(new_edges[i], false);
             assignInnovationNumberToGene(newInfo);
             delete newInfo;
         }

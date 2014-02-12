@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E20CC52F187C447E00AAA3DA /* MONEAT.h in Headers */ = {isa = PBXBuildFile; fileRef = E20CC52D187C447E00AAA3DA /* MONEAT.h */; };
+		E20CC52F187C447E00AAA3DA /* MONEAT.h in Headers */ = {isa = PBXBuildFile; fileRef = E20CC52D187C447E00AAA3DA /* MONEAT.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E21362741881D83000A8DCF1 /* NBUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E21362721881D83000A8DCF1 /* NBUtils.cpp */; };
 		E21362751881D83000A8DCF1 /* NBUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = E21362731881D83000A8DCF1 /* NBUtils.h */; };
 		E249A5EE187E154D009DFEBA /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E249A5ED187E154D009DFEBA /* main.cpp */; };
@@ -17,10 +17,12 @@
 		E249A5F71880422E009DFEBA /* BasicNN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC533187C544100AAA3DA /* BasicNN.cpp */; };
 		E249A5F818804234009DFEBA /* ExampleGoals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */; };
 		E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */; };
-		E2B6CED218A9D85200691C9B /* BaseNEAT.h in Headers */ = {isa = PBXBuildFile; fileRef = E2B6CED118A9D84800691C9B /* BaseNEAT.h */; };
+		E2B6CED218A9D85200691C9B /* BaseNEAT.h in Headers */ = {isa = PBXBuildFile; fileRef = E2B6CED118A9D84800691C9B /* BaseNEAT.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E2B6CED418A9D92300691C9B /* BaseNEAT.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E2B6CED318A9D92300691C9B /* BaseNEAT.cpp */; };
+		E2B6CED518A9E1E500691C9B /* MNIndividual.h in Headers */ = {isa = PBXBuildFile; fileRef = E2FF67B718A04D4400DA0490 /* MNIndividual.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E2B6CED618A9E1EA00691C9B /* MNEdge.h in Headers */ = {isa = PBXBuildFile; fileRef = E2FF67B818A0537D00DA0490 /* MNEdge.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E2E6B2E818A7FF46003AC5CB /* SPaNEAT.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E2E6B2E618A7FF46003AC5CB /* SPaNEAT.cpp */; };
-		E2E6B2E918A7FF46003AC5CB /* SPaNEAT.h in Headers */ = {isa = PBXBuildFile; fileRef = E2E6B2E718A7FF46003AC5CB /* SPaNEAT.h */; };
+		E2E6B2E918A7FF46003AC5CB /* SPaNEAT.h in Headers */ = {isa = PBXBuildFile; fileRef = E2E6B2E718A7FF46003AC5CB /* SPaNEAT.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E2E6B2EB18A7FFA6003AC5CB /* NEATCommon.h in Headers */ = {isa = PBXBuildFile; fileRef = E2E6B2EA18A7FF94003AC5CB /* NEATCommon.h */; };
 /* End PBXBuildFile section */
 
@@ -171,8 +173,10 @@
 			files = (
 				E2E6B2E918A7FF46003AC5CB /* SPaNEAT.h in Headers */,
 				E21362751881D83000A8DCF1 /* NBUtils.h in Headers */,
+				E2B6CED518A9E1E500691C9B /* MNIndividual.h in Headers */,
 				E2B6CED218A9D85200691C9B /* BaseNEAT.h in Headers */,
 				E20CC52F187C447E00AAA3DA /* MONEAT.h in Headers */,
+				E2B6CED618A9E1EA00691C9B /* MNEdge.h in Headers */,
 				E2E6B2EB18A7FFA6003AC5CB /* NEATCommon.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -24,7 +24,6 @@
 
 #define TIGHT_CLUSTERS 0
 
-#define USE_NODE_DIFF 1
 
 MONEAT::MONEAT(int populationSize, int maxGenerations, int maxStagnation)
 :BaseNEAT(populationSize, maxGenerations), nextSpeciesNumber(1),
@@ -34,7 +33,7 @@ stagnantGenerations(0)
 
 void MONEAT::prepareInitialPopulation()
 {
-    // we need to index the genome of the 'base' system
+    // we need to index the genome of the 'base' system, so the genome ordering goes right
     origin = createInitialIndividual();
     std::vector<InnovationInfo *> baseGenome = orderedConnectionGenome(origin->connectionGenome());
     
@@ -68,6 +67,13 @@ MONEAT::~MONEAT()
     while (it != population.end()) {
         delete *it;
         it = population.erase(it);
+    }
+    
+    //empty the innovations
+    std::vector<InnovationInfo *>::iterator it2 = newConnections.begin();
+    while (it2 != newConnections.end()) {
+        delete  *it2;
+        it2 = newConnections.erase(it2);
     }
     delete origin;
 }
@@ -474,13 +480,6 @@ bool MONEAT::tick()
             }
             
             
-            std::vector<SystemInfo *>::iterator deleteIt =  members.begin();
-            
-            while (deleteIt !=  members.end()) {
-                delete *deleteIt;
-                deleteIt =  members.erase(deleteIt);
-            }
-            
             (*speciesIterator)->members = newMembers;
             speciesIterator++;
             
@@ -491,6 +490,13 @@ bool MONEAT::tick()
         
     }
     
+    
+    // empty the  old population
+    std::vector<SystemInfo *>::iterator it = population.begin();
+    while (it != population.end()) {
+        delete *it;
+        it = population.erase(it);
+    }
     
     population = individualsToSave;
     
@@ -505,7 +511,7 @@ bool MONEAT::tick()
     const double bestRank = 1;
     
     // find the top ranking individuals
-    std::vector<SystemInfo *>::iterator it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [bestRank](const SystemInfo * elem){return elem->rankFitness == bestRank;});
+    it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [bestRank](const SystemInfo * elem){return elem->rankFitness == bestRank;});
     for (; it != individualsToSave.end(); it = std::find_if(++it, individualsToSave.end(), [bestRank](const SystemInfo * elem){return elem->rankFitness == bestRank;})) {
         bestIndividuals.push_back(*it);
     }

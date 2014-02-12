@@ -36,6 +36,7 @@ MNIndividual *createMult3Network()
 void runXorExample()
 {
     MONEAT *algo = new MONEAT(150, 200, 50);
+ //   SPaNEAT *algo = new SPaNEAT(200, 25, 200);
     algo->createInitialIndividual = &createXorNetwork;
     algo->evaluationFunctions.push_back(&xorEvaluation);
     
@@ -48,9 +49,9 @@ void runXorExample()
     
     while (!algo->tick());
     
-//    BasicNN *winner = algo->bestIndividual();
+   BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
 //    
-//    std::cout << "XOR score: " << xorEvaluation(winner) <<"\n";
+    std::cout << "XOR score: " << xorEvaluation(winner) <<"\n";
     delete algo;
 
 }
@@ -70,16 +71,18 @@ void runParityExample()
     
     while (!algo->tick());
     
-//    BasicNN *winner = algo->bestIndividual();
-//    
-//    parityEvaluation(winner);
+    BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
+    //
+    std::cout << "Parity score: " << parityEvaluation(winner) <<"\n";
+
     delete algo;
     
 }
 
 void runMult23SOTestTrain()
 {
-    MONEAT  *algo = new MONEAT (150, 200, 50);
+     SPaNEAT  *algo = new SPaNEAT (100, 25, 100);
+  //  MONEAT  *algo = new MONEAT (150, 200, 50);
     algo->createInitialIndividual = &createMult3Network;
     algo->evaluationFunctions.push_back(&trainMult23);
     
@@ -92,53 +95,17 @@ void runMult23SOTestTrain()
     
     while (!algo->tick());
     
-  //  BasicNN *winner = algo->bestIndividual();
+    BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
     
- //   std::cout << "Test score: " << testMult23(winner) <<"\n";
+    std::cout << "Test score: " << testMult23(winner) <<"\n";
+
     delete algo;
 }
-
-//void runMult23MOTestTrain()
-//{
-//    MONEAT  *algo = new MONEAT (25, 200, 50);
-//    algo->createInitialIndividual = &createMult3Network;
-//    algo->evaluationFunctions.push_back(&trainMult2);
-//    algo->evaluationFunctions.push_back(&trainMult3);
-//    
-//    algo->w_disjoint = 4.0;
-//    algo->w_excess = 4.0;
-//    algo->w_matching = 2.0;
-//    algo->w_matching_node = 2.0;
-//    
-//    algo->d_threshold = 2.0;
-//    
-//    while (!algo->tick());
-//    
-//    std::vector<SystemInfo *>winners = algo->optimalSolutions();
-//    assert(winners.size() > 0);
-//    std::cout << winners.size() << " optimal solutions found.\n";
-//    
-//    SystemInfo *bestSystem = NULL;
-//    double min_diff = INFINITY;
-//    for (std::vector<SystemInfo *>::iterator it = winners.begin(); it!=winners.end(); it++) {
-//        double d= fabs((*it)->fitnesses[0] - (*it)->fitnesses[1]);
-//        if (d < min_diff) {
-//            bestSystem = *it;
-//            min_diff = d;
-//        }
-//    }
-//    
-//    BasicNN *winner = dynamic_cast<BasicNN *>(bestSystem->individual);
-//    std::cout << "2 score: " << testMult2(winner) <<"\n";
-//    std::cout << "3 score: " << testMult3(winner) <<"\n";
-//    
-//    delete algo;
-//}
 
 void runMult23MOTestTrain()
 {
    // SPaNEAT  *algo = new SPaNEAT (100, 25, 100);
-    MONEAT  *algo = new MONEAT (100, 15, 100);
+    MONEAT  *algo = new MONEAT (100, 100, 15);
     algo->createInitialIndividual = &createMult3Network;
     algo->evaluationFunctions.push_back(&trainMult2);
     algo->evaluationFunctions.push_back(&trainMult3);
@@ -148,7 +115,7 @@ void runMult23MOTestTrain()
     algo->w_matching = 2.0;
     algo->w_matching_node = 2.0;
     
-    algo->d_threshold = 3.0;
+    algo->d_threshold = 4.0;
     
     while (!algo->tick());
     

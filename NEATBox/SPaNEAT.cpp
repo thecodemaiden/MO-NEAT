@@ -17,11 +17,11 @@
 
 #include "NBUtils.h"
 
-#define USE_NODE_DIFF 1
 #define SEPARATE_ARCHIVE 1
 
 SPaNEAT::SPaNEAT(long populationSize, long archiveSize, long maxGenerations)
-:BaseNEAT(populationSize, maxGenerations)
+:BaseNEAT(populationSize, maxGenerations),
+archiveSize(archiveSize)
 {}
 
 SPaNEAT::~SPaNEAT()
@@ -37,7 +37,13 @@ SPaNEAT::~SPaNEAT()
     for (std::vector<SPSystemInfo *>::iterator it = population.begin(); it != population.end(); it++) {
         delete *it;
     }
- 
+    
+    
+    //empty the innovations
+    for (std::vector<InnovationInfo *>::iterator it = newConnections.begin(); it != newConnections.end(); it++) {
+        delete *it;
+    }
+  
     delete origin;
 }
 
@@ -47,12 +53,6 @@ static bool compareIndividuals(SystemInfo *sys1, SystemInfo *sys2)
 {
     return sys1->rankFitness < sys2->rankFitness;
 }
-
-static bool compareInnovationNumbers(const InnovationInfo *a1, const InnovationInfo *a2)
-{
-    return a1->innovationNumber < a2->innovationNumber;
-}
-
 
 
 void SPaNEAT::spawnNextGeneration()

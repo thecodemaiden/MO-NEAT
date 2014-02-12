@@ -39,6 +39,10 @@ struct NEATSpecies {
     std::vector<SystemInfo *>members;
     double totalSharedFitness;
     int speciesNumber; // for data collection
+    
+    ~NEATSpecies() {
+        delete representative;
+    }
 };
 
 // SO DIRTY

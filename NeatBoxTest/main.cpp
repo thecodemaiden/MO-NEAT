@@ -10,8 +10,12 @@
 #include "ExampleRun.h"
 int main(int argc, const char * argv[])
 {
-   // runXorExample();
+ //   runXorExample();
+    runMult23SOTestTrain();
+    
+     std::cout << "\n\n";
     runMult23MOTestTrain();
+
 //    runMult3TestTrain();
     return 0;
 }

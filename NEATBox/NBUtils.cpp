@@ -39,7 +39,7 @@ long uniformlyDistributed(long upperBound)
 {
     double choice = (double)rand()/RAND_MAX;
     long l = (long)(choice * upperBound);
-    assert(l < upperBound);
+    assert(!l || l < upperBound);
     return l;
 }
 

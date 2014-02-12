@@ -1,4 +1,4 @@
-//
+ //
 //  ExampleGoals.cpp
 //  NEATBox
 //
@@ -105,9 +105,7 @@ double xorEvaluation(MNIndividual *i)
         diff += d*d;
         
     }
-    
-    // and diff runs from 0 to 4*n_cases;
-    
+        
     double finalScore = diff;
     
     return finalScore;
@@ -195,7 +193,7 @@ double trainMult23(MNIndividual *i)
     return diff;//(factor*nCases - diff)*(factor*nCases - diff);
 }
 
-double testMult23(MNIndividual *i)
+double testMult23(BasicNN *i)
 {
     BasicNN *individual = dynamic_cast<BasicNN *>(i);
     if (!individual)
