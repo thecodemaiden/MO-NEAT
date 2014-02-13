@@ -19,11 +19,11 @@
 #include "NBUtils.h"
 
 #define RESTRICT_SPECIES 0
-#define ROULETTE_SELECT 1
-#define INTERSPECIES 1
+#define ROULETTE_SELECT 0
+#define INTERSPECIES 0
 
 #define TIGHT_CLUSTERS 0
-#define FINE_RANK 0
+#define FINE_RANK 1
 
 
 MONEAT::MONEAT(int populationSize, int maxGenerations, int maxStagnation)
@@ -102,6 +102,11 @@ void MONEAT::spawnNextGeneration()
     }
 #endif
     
+    double  sharedFitnessSum = 0.0;
+    for (int i=0; i<speciesList.size(); i++) {
+        sharedFitnessSum += (speciesList[i]->totalSharedFitness);
+    }
+    
     // create population children through recombination
     std::vector<SystemInfo *>newGeneration;
     
@@ -114,7 +119,15 @@ void MONEAT::spawnNextGeneration()
         
         std::vector<SystemInfo *>individuals = breedingSpecies->members;
         
-        while (newMembers.size() < individuals.size()) {
+        double fitness = (*speciesIt)->totalSharedFitness;
+        double remainingFitness = 1.0/(sharedFitnessSum - fitness);
+        
+        double  proportionToSave =  remainingFitness/(1.0/fitness + remainingFitness);
+        if (speciesList.size() == 1)
+            proportionToSave = 1.0;
+        long numToSpawn = (proportionToSave*populationSize) - individuals.size();
+        
+        while (newMembers.size() < numToSpawn) {
             
             SystemInfo *p1;
             SystemInfo *p2;
@@ -459,8 +472,9 @@ bool MONEAT::tick()
     
     updateSharedFitnesses();
     
-    std::sort(population.begin(), population.end(), compareIndividuals);
+//    std::sort(population.begin(), population.end(), compareIndividuals);
 
+    std::map<NEATExtendedSpecies *, long> preservationMap;
     
     // figure out how many of each species to save
     double  sharedFitnessSum = 0.0;
@@ -468,61 +482,49 @@ bool MONEAT::tick()
         sharedFitnessSum += (speciesList[i]->totalSharedFitness);
     }
     
-    std::vector<SystemInfo *> individualsToSave;
-    // sort the species to ensure we keep the best
-    std::sort(speciesList.begin(), speciesList.end(), compareSpeciesFitness);
-    
     std::vector<NEATExtendedSpecies *>::iterator speciesIterator = speciesList.begin();
-    while (speciesIterator != speciesList.end()) {
-        std::vector<SystemInfo *> members = (*speciesIterator)->members;
-        size_t numMembers = members.size();
-        
-       // double invFitness = 1.0/((*speciesIterator)->totalSharedFitness);
-  //      double  proportionToSave =  invFitness/sharedFitnessSum;
+    
+    while(speciesIterator != speciesList.end()) {
         double fitness = (*speciesIterator)->totalSharedFitness;
         double remainingFitness = 1.0/(sharedFitnessSum - fitness);
-
+        
         double  proportionToSave =  remainingFitness/(1.0/fitness + remainingFitness);
-        long numToSave = std::min((size_t)(proportionToSave*populationSize), numMembers);
-        
-        assert(numToSave >= 0);
-        
-        std::sort(members.begin(), members.end(), compareIndividuals);
-        
-        // don't let population grow unchecked
-        if (individualsToSave.size() > populationSize)
-            numToSave = 0;
-        
-        
+        long numToSave = std::min((size_t)(proportionToSave*populationSize), (*speciesIterator)->members.size());
         if (numToSave > 0) {
-            std::vector<SystemInfo *> newMembers;
-            std::vector<SystemInfo *>::iterator it = members.begin();
-            
-            while (newMembers.size() < numToSave) {
-                
-                SystemInfo *saved = new SystemInfo(**it);
-                newMembers.push_back(saved);
-                individualsToSave.push_back(saved);
-                it++;
-            }
-            
-            
-            (*speciesIterator)->members = newMembers;
+            std::sort((*speciesIterator)->members.begin(), (*speciesIterator)->members.end(), compareIndividuals);
+            preservationMap[(*speciesIterator)] = numToSave;
             speciesIterator++;
-            
         } else {
+            delete (*speciesIterator);
             speciesIterator = speciesList.erase(speciesIterator);
-            
         }
-        
     }
     
-    std::sort(individualsToSave.begin(), individualsToSave.end(), compareIndividuals);
+    std::vector<SystemInfo *>individualsToSave;
+    std::map<NEATExtendedSpecies *, std::vector<SystemInfo *> > newMemberMap;
     
-    // stagnation if fitnesses are within 1% of each other
+    bool done;
+    long i=0;
+    do {
+        done = true;
+        std::vector<NEATExtendedSpecies *>::iterator speciesIterator;
+        for (speciesIterator = speciesList.begin(); speciesIterator != speciesList.end(); speciesIterator++) {
+            if (preservationMap[*speciesIterator] > i) {
+                std::vector<SystemInfo *> members = (*speciesIterator)->members;
+                SystemInfo *saved = new SystemInfo(*(*(members.begin() + i)));
+                individualsToSave.push_back(saved);
+                newMemberMap[*speciesIterator].push_back(saved);
+                done = false;
+            }
+        }
+        i++;
+    } while(!done);
     
+    // replace the species member lists
+    for (speciesIterator = speciesList.begin(); speciesIterator != speciesList.end(); speciesIterator++) {
+        (*speciesIterator)->members = newMemberMap[*speciesIterator];
+    }
     
-    generations++;
     
     bestIndividuals.clear();
     
@@ -536,18 +538,19 @@ bool MONEAT::tick()
     
     assert(bestIndividuals.size() > 0);
     
-    
-    
-    // empty the  old population
+    // delete the old population - saved individuals have been copied
     it = population.begin();
     while (it != population.end()) {
         delete *it;
         it = population.erase(it);
     }
     
-    population = individualsToSave;
 
     
+    population = individualsToSave;
+
+    generations++;
+
     if (!last_run) {
         spawnNextGeneration();
     }
