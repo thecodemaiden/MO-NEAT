@@ -115,7 +115,7 @@ void runMult23MOTestTrain()
     algo->w_matching = 2.0;
     algo->w_matching_node = 2.0;
     
-    algo->d_threshold = 4.0;
+    algo->d_threshold = 5.0;
     
     while (!algo->tick());
     

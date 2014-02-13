@@ -11,9 +11,9 @@
 int main(int argc, const char * argv[])
 {
  //   runXorExample();
-    runMult23SOTestTrain();
+ //   runMult23SOTestTrain();
     
-     std::cout << "\n\n";
+  //   std::cout << "\n\n";
     runMult23MOTestTrain();
 
 //    runMult3TestTrain();

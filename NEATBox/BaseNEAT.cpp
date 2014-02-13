@@ -51,6 +51,7 @@ void BaseNEAT::mutateSystem(MNIndividual  *original)
         InnovationInfo *newInfo = new InnovationInfo(created, false);
         assignInnovationNumberToGene(newInfo);
         delete newInfo;
+        delete created;
     }
     
     double selector2 = (double )rand()/RAND_MAX;

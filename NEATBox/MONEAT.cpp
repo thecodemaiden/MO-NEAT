@@ -23,6 +23,7 @@
 #define INTERSPECIES 1
 
 #define TIGHT_CLUSTERS 0
+#define FINE_RANK 0
 
 
 MONEAT::MONEAT(int populationSize, int maxGenerations, int maxStagnation)
@@ -185,8 +186,9 @@ void MONEAT::spawnNextGeneration()
 }
 
 NEATExtendedSpecies *MONEAT::chooseCompatibleSpecies(NEATExtendedSpecies *species, double maxDistance){
-    NEATExtendedSpecies *chosen = NULL;
-    bool accepted = false;
+    NEATExtendedSpecies *chosen = speciesList[uniformlyDistributed(speciesList.size())];
+
+    bool accepted = (maxDistance > 0); // if the distances are all 0, accept the first one we chose
     while (!accepted) {
         chosen = speciesList[uniformlyDistributed(speciesList.size())];
         double d = species->speciesDist[chosen];
@@ -273,7 +275,8 @@ void MONEAT::updateSharedFitnesses()
             double  totalFitness = 0.0;
             typename std::vector<SystemInfo *>::iterator memberIterator = members.begin();
             while (memberIterator != members.end()) {
-                totalFitness += (*memberIterator)->rankFitness/members.size();
+                double invFitness = 1.0/(*memberIterator)->rankFitness;
+                totalFitness += invFitness/members.size();
                 memberIterator++;
             }
             
@@ -299,6 +302,8 @@ void MONEAT::updateSharedFitnesses()
 
 // does s1 dominate s2?
 // i.e. all s1 fitness values are greater than s2?
+// i also consider a to dominate b if they are otherwise non dominating
+// but the sum of a's fitnesses is smaller than the sum of b's
 static int domination(SystemInfo *s1, SystemInfo *s2)
 {
     bool firstDominates = true;
@@ -307,7 +312,15 @@ static int domination(SystemInfo *s1, SystemInfo *s2)
     std::vector<double>::iterator fitnessIter1 = s1->fitnesses.begin();
     std::vector<double>::iterator fitnessIter2 = s2->fitnesses.begin();
     
+#if FINE_RANK
+    double fitnessSum1 = 0.0;
+    double fitnessSum2 = 0.0;
+#endif
     while (fitnessIter1 != s1->fitnesses.end()) {
+#if FINE_RANK
+        fitnessSum1 += *fitnessIter1;
+        fitnessSum2 += *fitnessIter2;
+#endif
         if (*fitnessIter1 > *fitnessIter2)
             firstDominates = false;
         
@@ -317,8 +330,15 @@ static int domination(SystemInfo *s1, SystemInfo *s2)
         fitnessIter1++;
     }
     
-    if (firstDominates == secondDominates)
+    if (firstDominates == secondDominates) {
+#if FINE_RANK
+        if (fitnessSum1 < fitnessSum2)
+            return 1;
+        if (fitnessSum2 < fitnessSum1)
+            return -1;
+#endif
         return 0;
+    }
     
     if (firstDominates)
         return 1;
@@ -439,11 +459,13 @@ bool MONEAT::tick()
     
     updateSharedFitnesses();
     
+    std::sort(population.begin(), population.end(), compareIndividuals);
+
     
     // figure out how many of each species to save
     double  sharedFitnessSum = 0.0;
     for (int i=0; i<speciesList.size(); i++) {
-        sharedFitnessSum += speciesList[i]->totalSharedFitness;
+        sharedFitnessSum += (speciesList[i]->totalSharedFitness);
     }
     
     std::vector<SystemInfo *> individualsToSave;
@@ -455,7 +477,12 @@ bool MONEAT::tick()
         std::vector<SystemInfo *> members = (*speciesIterator)->members;
         size_t numMembers = members.size();
         
-        double  proportionToSave = ((*speciesIterator)->totalSharedFitness)/sharedFitnessSum;
+       // double invFitness = 1.0/((*speciesIterator)->totalSharedFitness);
+  //      double  proportionToSave =  invFitness/sharedFitnessSum;
+        double fitness = (*speciesIterator)->totalSharedFitness;
+        double remainingFitness = 1.0/(sharedFitnessSum - fitness);
+
+        double  proportionToSave =  remainingFitness/(1.0/fitness + remainingFitness);
         long numToSave = std::min((size_t)(proportionToSave*populationSize), numMembers);
         
         assert(numToSave >= 0);
@@ -490,16 +517,7 @@ bool MONEAT::tick()
         
     }
     
-    
-    // empty the  old population
-    std::vector<SystemInfo *>::iterator it = population.begin();
-    while (it != population.end()) {
-        delete *it;
-        it = population.erase(it);
-    }
-    
-    population = individualsToSave;
-    
+    std::sort(individualsToSave.begin(), individualsToSave.end(), compareIndividuals);
     
     // stagnation if fitnesses are within 1% of each other
     
@@ -511,13 +529,24 @@ bool MONEAT::tick()
     const double bestRank = 1;
     
     // find the top ranking individuals
-    it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [bestRank](const SystemInfo * elem){return elem->rankFitness == bestRank;});
+   std::vector<SystemInfo *>::iterator it = std::find_if(individualsToSave.begin(), individualsToSave.end(), [bestRank](const SystemInfo * elem){return elem->rankFitness == bestRank;});
     for (; it != individualsToSave.end(); it = std::find_if(++it, individualsToSave.end(), [bestRank](const SystemInfo * elem){return elem->rankFitness == bestRank;})) {
         bestIndividuals.push_back(*it);
     }
     
     assert(bestIndividuals.size() > 0);
     
+    
+    
+    // empty the  old population
+    it = population.begin();
+    while (it != population.end()) {
+        delete *it;
+        it = population.erase(it);
+    }
+    
+    population = individualsToSave;
+
     
     if (!last_run) {
         spawnNextGeneration();
