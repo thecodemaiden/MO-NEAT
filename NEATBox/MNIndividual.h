@@ -19,8 +19,8 @@ public:
     virtual ~MNIndividual(){};
     
     virtual std::vector<MNEdge *> connectionGenome() = 0;
-    virtual void mutateConnectionWeight() = 0;
-    virtual void mutateNode(long n) = 0;
+    virtual void mutateConnectionWeights(double p_m) = 0;
+    virtual void mutateNodes(double p_m) = 0;
     virtual MNEdge *createConnection() = 0;
     virtual std::vector<MNEdge *> createNode() = 0;
     virtual long numberOfNodes() = 0;

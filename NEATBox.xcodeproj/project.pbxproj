@@ -17,6 +17,9 @@
 		E249A5F71880422E009DFEBA /* BasicNN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC533187C544100AAA3DA /* BasicNN.cpp */; };
 		E249A5F818804234009DFEBA /* ExampleGoals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC537187C612C00AAA3DA /* ExampleGoals.cpp */; };
 		E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */; };
+		E26BA30818ADA01C00DFA8DB /* NEATBox.h in Headers */ = {isa = PBXBuildFile; fileRef = E26BA30718ADA01C00DFA8DB /* NEATBox.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		E26BA30C18ADA7B900DFA8DB /* LayeredNN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E26BA30A18ADA7B900DFA8DB /* LayeredNN.cpp */; };
+		E26BA30E18ADB0FC00DFA8DB /* NNCommon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E26BA30D18ADB0FC00DFA8DB /* NNCommon.cpp */; };
 		E2B6CED218A9D85200691C9B /* BaseNEAT.h in Headers */ = {isa = PBXBuildFile; fileRef = E2B6CED118A9D84800691C9B /* BaseNEAT.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E2B6CED418A9D92300691C9B /* BaseNEAT.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E2B6CED318A9D92300691C9B /* BaseNEAT.cpp */; };
 		E2B6CED518A9E1E500691C9B /* MNIndividual.h in Headers */ = {isa = PBXBuildFile; fileRef = E2FF67B718A04D4400DA0490 /* MNIndividual.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -57,6 +60,11 @@
 		E249A5EB187E154D009DFEBA /* NeatBoxTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NeatBoxTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E249A5ED187E154D009DFEBA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = NeatBoxTest.1; sourceTree = "<group>"; };
+		E26BA30718ADA01C00DFA8DB /* NEATBox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NEATBox.h; sourceTree = "<group>"; };
+		E26BA30918ADA77F00DFA8DB /* NNCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NNCommon.h; sourceTree = "<group>"; };
+		E26BA30A18ADA7B900DFA8DB /* LayeredNN.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LayeredNN.cpp; sourceTree = "<group>"; };
+		E26BA30B18ADA7B900DFA8DB /* LayeredNN.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LayeredNN.h; sourceTree = "<group>"; };
+		E26BA30D18ADB0FC00DFA8DB /* NNCommon.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NNCommon.cpp; sourceTree = "<group>"; };
 		E2B6CED118A9D84800691C9B /* BaseNEAT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BaseNEAT.h; sourceTree = "<group>"; };
 		E2B6CED318A9D92300691C9B /* BaseNEAT.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BaseNEAT.cpp; sourceTree = "<group>"; };
 		E2E6B2E618A7FF46003AC5CB /* SPaNEAT.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SPaNEAT.cpp; sourceTree = "<group>"; };
@@ -106,6 +114,7 @@
 		E20CC51D187C445500AAA3DA /* NEATBox */ = {
 			isa = PBXGroup;
 			children = (
+				E26BA30718ADA01C00DFA8DB /* NEATBox.h */,
 				E21362731881D83000A8DCF1 /* NBUtils.h */,
 				E21362721881D83000A8DCF1 /* NBUtils.cpp */,
 				E2E6B2EA18A7FF94003AC5CB /* NEATCommon.h */,
@@ -143,8 +152,12 @@
 		E20CC532187C531300AAA3DA /* Example Classes */ = {
 			isa = PBXGroup;
 			children = (
+				E26BA30918ADA77F00DFA8DB /* NNCommon.h */,
+				E26BA30D18ADB0FC00DFA8DB /* NNCommon.cpp */,
 				E20CC534187C544100AAA3DA /* BasicNN.h */,
 				E20CC533187C544100AAA3DA /* BasicNN.cpp */,
+				E26BA30B18ADA7B900DFA8DB /* LayeredNN.h */,
+				E26BA30A18ADA7B900DFA8DB /* LayeredNN.cpp */,
 			);
 			name = "Example Classes";
 			path = ../NEATBox;
@@ -171,6 +184,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E26BA30818ADA01C00DFA8DB /* NEATBox.h in Headers */,
 				E2E6B2E918A7FF46003AC5CB /* SPaNEAT.h in Headers */,
 				E21362751881D83000A8DCF1 /* NBUtils.h in Headers */,
 				E2B6CED518A9E1E500691C9B /* MNIndividual.h in Headers */,
@@ -262,8 +276,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */,
+				E26BA30C18ADA7B900DFA8DB /* LayeredNN.cpp in Sources */,
 				E249A5EE187E154D009DFEBA /* main.cpp in Sources */,
 				E249A5F818804234009DFEBA /* ExampleGoals.cpp in Sources */,
+				E26BA30E18ADB0FC00DFA8DB /* NNCommon.cpp in Sources */,
 				E249A5F71880422E009DFEBA /* BasicNN.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

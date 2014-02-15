@@ -10,11 +10,12 @@
 #define __NEATBox__ExampleRun__
 
 #include <iostream>
+#include <NEATBox/BaseNeat.h>
 
-void runXorExample();
-void runParityExample();
+void runXorExample(BaseNEAT *algo);
+void runParityExample(BaseNEAT *algo);
 
-void runMult23SOTestTrain();
+void runMult23SOTestTrain(BaseNEAT *algo);
 
-void runMult23MOTestTrain();
+void runMult23MOTestTrain(BaseNEAT *algo);
 #endif /* defined(__NEATBox__ExampleRun__) */

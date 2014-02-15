@@ -64,6 +64,7 @@ public:
     std::vector<EvaluationFunction> evaluationFunctions;
     
     MNIndividual *(*createInitialIndividual)(void); // the smallest/starting individual
+    bool verbose = false;
 #pragma mark -
     
     long getNumberOfIterations();

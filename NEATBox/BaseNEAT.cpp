@@ -26,21 +26,8 @@ std::vector<SystemInfo *> BaseNEAT::optimalSolutions()
 
 void BaseNEAT::mutateSystem(MNIndividual  *original)
 {
-    std::vector<MNEdge *> allAttachments = original->connectionGenome();
-    typename std::vector<MNEdge *>::iterator it = allAttachments.begin();
-    while (it != allAttachments.end()) {
-        double selector = (double )rand()/RAND_MAX;
-        if (selector < p_m_conn)
-            original->mutateConnectionWeight();
-        it++;
-    }
-    
-    long nNodes = original->numberOfNodes();
-    for (long i=0; i<nNodes; i++) {
-        double selector = (double )rand()/RAND_MAX;
-        if (selector < p_m_node)
-            original->mutateNode(i);
-    }
+    original->mutateConnectionWeights(p_m_conn);
+    original->mutateNodes(p_m_node);
     
     // add attachment or add node - or both
     double selector1 = (double )rand()/RAND_MAX;
@@ -48,7 +35,7 @@ void BaseNEAT::mutateSystem(MNIndividual  *original)
         // insert a new connection
         // update the innovation number
         MNEdge *created = original->createConnection();
-        InnovationInfo *newInfo = new InnovationInfo(created, false);
+        InnovationInfo *newInfo = new InnovationInfo(created, true);
         assignInnovationNumberToGene(newInfo);
         delete newInfo;
         delete created;
@@ -59,9 +46,10 @@ void BaseNEAT::mutateSystem(MNIndividual  *original)
         // add a node somewhere if possible
         std::vector<MNEdge *> new_edges = original->createNode();
         for (int i=0; i<new_edges.size(); i++) {
-            InnovationInfo *newInfo = new InnovationInfo(new_edges[i], false);
+            InnovationInfo *newInfo = new InnovationInfo(new_edges[i], true);
             assignInnovationNumberToGene(newInfo);
             delete newInfo;
+            delete new_edges[i];
         }
     }
 }
@@ -204,10 +192,6 @@ double BaseNEAT::genomeDistance(MNIndividual *sys1,  MNIndividual *sys2)
                 // genome 2 has excess, switch last1 and last2
                 shorter=disjointFromSys1;
                 longer = disjointFromSys2;
-                
-                int temp = last1;
-                last1 = last2;
-                last2 = temp;
             }
             // go back from end of longer until we run into a value <= the end of shorter
             size_t i;

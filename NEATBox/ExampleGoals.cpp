@@ -17,12 +17,6 @@ double dummyEvaluation(MNIndividual *individual)
     return 1.0/(individual->numberOfEdges());
 }
 
-bool goodEnoughDummyFitness(double bestFitness)
-{
-    return bestFitness >= 15.0;
-}
-
-
 
 double parityEvaluation(MNIndividual *i)
 {
@@ -65,11 +59,6 @@ double parityEvaluation(MNIndividual *i)
     return diff;
 }
 
-bool parityFitnessSatisfied(double bestFitness)
-{
-    //const double factor = 4.0;
-    return bestFitness >= (975.0);
-}
 
 
 
@@ -111,147 +100,11 @@ double xorEvaluation(MNIndividual *i)
     return finalScore;
 }
 
-bool xorFitnessSatisfied(double bestFitness)
-{
-  //  const int factor = 2;
-
-    return false;//bestFitness > (factor*4*factor*3);
-}
-
 
 double trainMult23(MNIndividual *i)
 {
-    
-    BasicNN *individual = dynamic_cast<BasicNN *>(i);
-    if (!individual)
-        return -INFINITY;
-    
-    const int nCases = 10;
-
-    const double yesVal = 1.0;
-    const double noVal = -1.0;
-    
-    std::vector<std::array<double, 4> > inVals;
-    std::vector<std::array<double, 2> > expectedOutput;
-
-    // 10 training cases:
-    inVals.push_back({noVal,noVal,noVal,noVal}); //0
-    expectedOutput.push_back({yesVal, yesVal});
-    
-    inVals.push_back({noVal,noVal,noVal,yesVal}); //1
-    expectedOutput.push_back({noVal, noVal});
-   
-    inVals.push_back({noVal,noVal,yesVal,yesVal}); //3
-    expectedOutput.push_back({yesVal, noVal});
-   
-    inVals.push_back({noVal,yesVal,noVal,noVal}); //4
-    expectedOutput.push_back({noVal, yesVal});
-   
-    inVals.push_back({noVal,yesVal,yesVal,yesVal});//7
-    expectedOutput.push_back({noVal, noVal});
-  
-    inVals.push_back({yesVal,noVal,noVal,noVal});//8
-    expectedOutput.push_back({noVal, yesVal});
-  
-    inVals.push_back({yesVal,noVal,yesVal,noVal});//10
-    expectedOutput.push_back({noVal, yesVal});
-   
-    inVals.push_back({yesVal,yesVal,noVal,noVal});//12
-    expectedOutput.push_back({yesVal, yesVal});
-   
-    inVals.push_back({yesVal,yesVal,noVal,yesVal});//13
-    expectedOutput.push_back({noVal, noVal});
-  
-    inVals.push_back({yesVal,yesVal,yesVal,yesVal});//15
-    expectedOutput.push_back({yesVal, noVal});
-
-    
-    
-    std::vector<std::array<double, 2> > actualOutput;
-
-  //  int nCorrect = 0;
-    
-    double diff_3 = 0;
-    double diff_2 = 0;
-    for (int i=0; i<nCases; i++) {
-        std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
-        std::vector<std::vector<double> > seqInputs;
-        seqInputs.push_back(input);
-        std::vector<std::vector<double> > seqOutputs = individual->simulateSequence(seqInputs, 1);
-        std::vector<double> outputs = seqOutputs.front();
-        actualOutput.push_back( {outputs[0], outputs[1]});
-        
-        double d_3 = expectedOutput[i][0] - outputs[0];
-        double d_2 = expectedOutput[i][1] - outputs[1];
-        diff_2 += d_2*d_2;
-        diff_3 += d_3*d_3;
-    
-    }
-    double diff = (diff_2 + diff_3);
-//    const int factor = 8;
-    
-    return diff;//(factor*nCases - diff)*(factor*nCases - diff);
+    return trainMult2(i)+trainMult3(i);
 }
-
-double testMult23(BasicNN *i)
-{
-    BasicNN *individual = dynamic_cast<BasicNN *>(i);
-    if (!individual)
-        return -INFINITY;
-    
-    const int nCases = 6;
-    const double yesVal = 1.0;
-    const double noVal = -1.0;
-    
-    std::vector<std::array<double, 4> > inVals;
-    std::vector<std::array<double, 2> > expectedOutput;
-
-    // 6 test cases
-    inVals.push_back({noVal,noVal,yesVal,noVal}); // 2
-    expectedOutput.push_back({noVal, yesVal});
-
-    inVals.push_back({noVal,yesVal,noVal,yesVal}); // 5
-    expectedOutput.push_back({noVal, noVal});
-
-    inVals.push_back({noVal,yesVal,yesVal,noVal}); // 6
-    expectedOutput.push_back({yesVal, yesVal});
-
-    inVals.push_back({yesVal,noVal,noVal,yesVal}); // 9
-    expectedOutput.push_back({yesVal, noVal});
-
-    inVals.push_back({yesVal,noVal,yesVal,yesVal}); // 11
-    expectedOutput.push_back({noVal,noVal});
-
-    inVals.push_back({yesVal,yesVal,yesVal,noVal}); // 14
-    expectedOutput.push_back({noVal, yesVal});
-    
-    
-    std::vector<std::array<double, 2> > actualOutput;
-
-    double diff_3 = 0;
-    double diff_2 = 0;
-    for (int i=0; i<nCases; i++) {
-        std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
-        std::vector<std::vector<double> > seqInputs;
-        seqInputs.push_back(input);
-        std::vector<std::vector<double> > seqOutputs = individual->simulateSequence(seqInputs, 1);
-        std::vector<double> outputs = seqOutputs.front();
-        actualOutput.push_back({outputs[0], outputs[1]});
-        
-        double d_3 = expectedOutput[i][0] - outputs[0];
-        double d_2 = expectedOutput[i][1] - outputs[1];
-        diff_2 += d_2*d_2;
-        diff_3 += d_3*d_3;
-        
-    }
-    double diff = diff_2 + diff_3;
-    
-//    const int factor = 8;
-    
-    return diff;
-}
-
-// FOR MONEAT
 
 
 double trainMult2(MNIndividual *i)

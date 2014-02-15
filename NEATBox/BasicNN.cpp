@@ -12,8 +12,9 @@
 #include <cmath>
 #include <assert.h>
 
-// locate incoming and outgoing edges for a node number
+bool BasicNN::_recurrent = true;
 
+// locate incoming and outgoing edges for a node number
 struct has_input {
     has_input(long n) : n(n) { }
     bool operator()(Edge e) const { return e.nodeTo == n && !e.disabled; }
@@ -27,30 +28,6 @@ struct has_output {
 private:
     long n;
 };
-
-std::string activationFuncName(ActivationFunc f)
-{
-  //  std::ostringstream name;
-    std::string name;
-    switch (f) {
-        case SIN_FUNC:
-            name = "SIN";
-            break;
-        case GAUSSIAN_FUNC:
-            name = "GAUSSIAN";
-            break;
-        case TANH_FUNC:
-            name = "TANH";
-            break;
-        case STEP_FUNC:
-            name = "THRESHOLD";
-            break;
-        default:
-            break;
-    }
-   // return name.str();
-    return name;
-}
 
 BasicNN::BasicNN(int nInputs, int nOutputs)
 {
@@ -100,7 +77,7 @@ void BasicNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
         didDisable = gene->disabled;
     } else {
         
-        Edge copy = Edge(*gene);
+        edges.push_back(*gene);
         
         while (gene->nodeFrom >= nodes.size() || gene->nodeTo >= nodes.size()) {
             // add nodes up to the required number, copying from the parent
@@ -109,7 +86,6 @@ void BasicNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
             newNode.indegree = newNode.outdegree = 0;
             nodes.push_back(newNode);
         }
-        edges.push_back(copy);
     }
     if (!gene->disabled) {
         nodes.at(gene->nodeFrom).outdegree++;
@@ -120,11 +96,7 @@ void BasicNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
         nodes.at(gene->nodeFrom).outdegree--;
         nodes.at(gene->nodeTo).indegree--;
     }
-    
-//    for(std::set<long>::iterator it = outputNodes.begin(); it!=outputNodes.end(); it++) {
-//        assert(nodes[*it].indegree > 0);
-//    }
-    
+
 }
 
 std::vector<MNEdge *> BasicNN::connectionGenome()
@@ -136,27 +108,33 @@ std::vector<MNEdge *> BasicNN::connectionGenome()
     return genome;
 }
 
-void BasicNN::mutateConnectionWeight()
+void BasicNN::mutateConnectionWeights(double p_m)
 {
     // pick a random edge (disabled is fine?) and mutate its weight
-    double var = normallyDistributed();
-    
-    uint pos = arc4random_uniform((uint)edges.size());
-    Edge &toMutate = edges.at(pos);
-    
-    toMutate.weight = var;
+    for (size_t pos = 0; pos < edges.size(); pos++) {
+        if (uniformProbability() < p_m) {
+            double var = normallyDistributed();
+            Edge &toMutate = edges.at(pos);
+            
+            toMutate.weight = var;
+        }
+    }
 }
 
-void BasicNN::mutateNode(long n)
+void BasicNN::mutateNodes(double p_m)
 {
     double selector = (double)rand()/RAND_MAX;
     
-    if (selector < 0.33)
-        nodes[n].bias = normallyDistributed();
-    else if (selector < 0.67)
-        nodes[n].param1 = normallyDistributed(0,2);
-    else
-        nodes[n].type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
+    for (size_t n = 0; n<nodes.size(); n++) {
+        if (uniformProbability() < p_m) {
+            if (selector < 0.33)
+                nodes[n].bias = normallyDistributed();
+            else if (selector < 0.67)
+                nodes[n].param1 = normallyDistributed(0,2);
+            else
+                nodes[n].type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
+        }
+    }
 }
 
 
@@ -190,18 +168,18 @@ std::vector<MNEdge *> BasicNN::insertNodeOnEdge(Edge &e)
         e2.disabled = e.disabled;
     e.disabled = true;
     
-    std::vector<Edge>::iterator edgeIt;
     std::vector<MNEdge *> toReturn;
 
     
-    edgeIt = edges.insert(edges.end(), e1);
-    toReturn.push_back(&*edgeIt);
+    edges.push_back(e1);
+    edges.push_back(e2);
     
-    edgeIt = edges.insert(edges.end(), e2);
-    toReturn.push_back(&*edgeIt);
+    Edge *first = new Edge(e1);
+    Edge *second = new Edge(e2);
     
     
-    
+    toReturn.push_back(first);
+    toReturn.push_back(second);
     return toReturn;
 }
 
@@ -238,11 +216,17 @@ std::vector<MNEdge *> BasicNN::insertNodeOnEdge(Edge &e)
 //    return toReturn;
 //}
 
+inline bool BasicNN::isRecurrent()
+{
+    return _recurrent;
+}
 
 Edge *BasicNN::createConnection()
 {
+    bool recurrent = isRecurrent();
+
     // pick two existing, unconnected nodes and connect them - can connect self to self!
-    long maxConnections = (nodes.size()*nodes.size());
+    long maxConnections = nodes.size()*(recurrent ? nodes.size() : nodes.size() - 1);
 
     long activeEdges = std::count_if(edges.begin(), edges.end(), [](Edge e) {return !e.disabled;});
     
@@ -252,8 +236,7 @@ Edge *BasicNN::createConnection()
     
     if (activeEdges < maxConnections) {
         // chose a source node at random
-   //     long maxDegree = nodes.size() -1;
-        long maxDegree = nodes.size();
+        long maxDegree = recurrent ? nodes.size() : nodes.size() - 1;
         Node source;
         uint pos;
         do {
@@ -277,11 +260,12 @@ Edge *BasicNN::createConnection()
         Node sink;
         bool found = false;
         
+        
         do {
             pos = arc4random_uniform((uint)nodes.size());
          
-          //  if (pos == newEdge.nodeFrom)
-          //      continue;
+            if (!recurrent && pos == newEdge.nodeFrom)
+                continue;
             
             sink = nodes.at(pos);
             newEdge.nodeTo = pos;

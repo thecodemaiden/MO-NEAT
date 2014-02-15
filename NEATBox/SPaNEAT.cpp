@@ -217,9 +217,9 @@ bool SPaNEAT::tick()
         first_run = true;
     }
     
-    std::vector<SPSystemInfo *>::iterator popIter;
-    for (popIter = population.begin(); popIter != population.end(); popIter++) {
-        SPSystemInfo *sys = *popIter;
+    std::vector<SPSystemInfo *>::iterator sysIter;
+    for (sysIter = population.begin(); sysIter != population.end(); sysIter++) {
+        SPSystemInfo *sys = *sysIter;
         sys->fitnesses.clear();
         
         std::vector<EvaluationFunction>::iterator funcIter;
@@ -245,22 +245,22 @@ bool SPaNEAT::tick()
     std::sort(toRank.begin(), toRank.end(), compareIndividuals);
     
     std::vector<SPSystemInfo *>::iterator lastArchived = population.begin();
-    for (popIter = toRank.begin(); popIter != toRank.end(); popIter++) {
-        if ((*popIter)->rankFitness < 1.0) {
-            newArchive.push_back(new SPSystemInfo(**popIter));
-            lastArchived = popIter;
+    for (sysIter = toRank.begin(); sysIter != toRank.end(); sysIter++) {
+        if ((*sysIter)->rankFitness < 1.0) {
+            newArchive.push_back(new SPSystemInfo(**sysIter));
+            lastArchived = sysIter;
         }
     }
-    
-    std::cout << newArchive.size() << " non dominated solutions (" << generations << ").\n";
+    if (verbose)
+        std::cout << newArchive.size() << " non dominated solutions (" << generations << ").\n";
 
     
     long archiveExcess = newArchive.size() - archiveSize;
     
     if (archiveExcess < 0) {
         // add in the next best -archiveExcess solutions
-        for (popIter = lastArchived+1; popIter != lastArchived - archiveExcess +1; popIter++) {
-            newArchive.push_back(new SPSystemInfo(**popIter));
+        for (sysIter = lastArchived+1; sysIter != lastArchived - archiveExcess +1; sysIter++) {
+            newArchive.push_back(new SPSystemInfo(**sysIter));
         }
     }
     
@@ -268,10 +268,10 @@ bool SPaNEAT::tick()
         // remove by crowding distance...
         std::sort(newArchive.begin(), newArchive.end(), [](const SPSystemInfo * elem1, const SPSystemInfo *elem2){return elem1->distances < elem2->distances;});
         
-        popIter = newArchive.begin();
+        sysIter = newArchive.begin();
         for (long i=0; i<archiveExcess; i++) {
-            delete *popIter;
-            popIter = newArchive.erase(popIter);
+            delete *sysIter;
+            sysIter = newArchive.erase(sysIter);
         }
     }
 
@@ -279,14 +279,14 @@ bool SPaNEAT::tick()
 
     // delete everything in the old population
     // XXX: this includes the old archive (for now)
-    for (popIter = population.begin(); popIter != population.end(); popIter++) {
-        delete  *popIter;
+    for (sysIter = population.begin(); sysIter != population.end(); sysIter++) {
+        delete  *sysIter;
     }
     population.clear();
     
 #if SEPARATE_ARCHIVE
-    for (popIter = archive.begin(); popIter != archive.end(); popIter++) {
-        delete  *popIter;
+    for (sysIter = archive.begin(); sysIter != archive.end(); sysIter++) {
+        delete  *sysIter;
     }
 #endif
     

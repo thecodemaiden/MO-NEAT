@@ -14,17 +14,13 @@
 
 
 double dummyEvaluation(MNIndividual *individual);
-bool goodEnoughDummyFitness(double bestFitness);
 
 double xorEvaluation(MNIndividual *individual);
-bool xorFitnessSatisfied(double bestFitness);
 
 double parityEvaluation(MNIndividual *individual);
-bool parityFitnessSatisfied(double bestFitness);
 
 // IS THE INPUT A MULTIPLE OF 3?2? 
 double trainMult23(MNIndividual *individual);
-double testMult23(BasicNN *individual);
 
 double trainMult2(MNIndividual *individual);
 double trainMult3(MNIndividual *individual);

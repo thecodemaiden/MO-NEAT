@@ -33,9 +33,8 @@ MNIndividual *createMult3Network()
     return new BasicNN(4,2);
 }
 
-void runXorExample()
+void runXorExample(BaseNEAT *algo)
 {
-    MONEAT *algo = new MONEAT(150, 200, 50);
  //   SPaNEAT *algo = new SPaNEAT(200, 25, 200);
     algo->createInitialIndividual = &createXorNetwork;
     algo->evaluationFunctions.push_back(&xorEvaluation);
@@ -51,14 +50,12 @@ void runXorExample()
     
    BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
 //    
-    std::cout << "XOR score: " << xorEvaluation(winner) <<"\n";
-    delete algo;
+    std::cout << "XOR score: " << xorEvaluation(winner) <<"\n\n";
 
 }
 
-void runParityExample()
+void runParityExample(BaseNEAT *algo)
 {
-    MONEAT *algo = new MONEAT (150, 200, 50);
     algo->createInitialIndividual = &createParityNetwork;
     algo->evaluationFunctions.push_back(&parityEvaluation);
     
@@ -73,16 +70,13 @@ void runParityExample()
     
     BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
     //
-    std::cout << "Parity score: " << parityEvaluation(winner) <<"\n";
+    std::cout << "Parity score: " << parityEvaluation(winner) <<"\n\n";
 
-    delete algo;
     
 }
 
-void runMult23SOTestTrain()
+void runMult23SOTestTrain(BaseNEAT *algo)
 {
-     SPaNEAT  *algo = new SPaNEAT (100, 25, 100);
-  //  MONEAT  *algo = new MONEAT (150, 200, 50);
     algo->createInitialIndividual = &createMult3Network;
     algo->evaluationFunctions.push_back(&trainMult23);
     
@@ -97,15 +91,12 @@ void runMult23SOTestTrain()
     
     BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
     
-    std::cout << "Test score: " << testMult23(winner) <<"\n";
-
-    delete algo;
+    std::cout << "2 score: " << testMult2(winner) <<"\n";
+    std::cout << "3 score: " << testMult3(winner) <<"\n\n";
 }
 
-void runMult23MOTestTrain()
+void runMult23MOTestTrain(BaseNEAT *algo)
 {
-   // SPaNEAT  *algo = new SPaNEAT (100, 25, 100);
-    MONEAT  *algo = new MONEAT (100, 100, 15);
     algo->createInitialIndividual = &createMult3Network;
     algo->evaluationFunctions.push_back(&trainMult2);
     algo->evaluationFunctions.push_back(&trainMult3);
@@ -134,10 +125,11 @@ void runMult23MOTestTrain()
         }
     }
     
-    BasicNN *winner = dynamic_cast<BasicNN *>(bestSystem->individual);
-    std::cout << "2 score: " << testMult2(winner) <<"\n";
-    std::cout << "3 score: " << testMult3(winner) <<"\n";
-    
-    delete algo;
+    if (bestSystem) {
+        BasicNN *winner = dynamic_cast<BasicNN *>(bestSystem->individual);
+        
+        std::cout << "2 score: " << testMult2(winner) <<"\n";
+        std::cout << "3 score: " << testMult3(winner) <<"\n\n";
+    }
 }
 
