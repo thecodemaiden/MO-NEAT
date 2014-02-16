@@ -19,7 +19,7 @@
 
 #define SEPARATE_ARCHIVE 1
 
-SPaNEAT::SPaNEAT(long populationSize, long archiveSize, long maxGenerations)
+SPaNEAT::SPaNEAT(long populationSize, long maxGenerations, long archiveSize)
 :BaseNEAT(populationSize, maxGenerations),
 archiveSize(archiveSize)
 {}

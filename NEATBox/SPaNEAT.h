@@ -63,7 +63,7 @@ protected:
     virtual void prepareInitialPopulation();
     
 public:
-    SPaNEAT(long populationSize, long archiveSize, long maxGenerations=500);
+    SPaNEAT(long populationSize, long maxGenerations, long archiveSize);
     ~SPaNEAT();
     
     // notice that this cannot be overriden.

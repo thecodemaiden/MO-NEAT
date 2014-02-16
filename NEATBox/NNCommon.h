@@ -14,12 +14,11 @@
 #include "NBUtils.h"
 
 enum ActivationFunc {
-    GAUSSIAN_FUNC,
     TANH_FUNC,
-    FUNC_SENTINEL,
+    GAUSSIAN_FUNC,
     STEP_FUNC,
     SIN_FUNC,
-    
+    FUNC_SENTINEL,
 };
 
 std::string activationFuncName(ActivationFunc f);
@@ -92,6 +91,8 @@ struct Node {
         type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
     };
 };
+
+double applyActivationFunc(Node n, double inputSum);
 
 
 #endif

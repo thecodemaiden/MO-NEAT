@@ -307,12 +307,39 @@ double BasicNN::nodeDifference(MNIndividual *ind)
     if (!other)
         return INFINITY;
     
-    long length = std::min(other->nodes.size(), nodes.size());
+
+    
+    long length = std::max(other->nodes.size(), nodes.size());
     double d = 0;
     for (long i=0; i<length; i++) {
-        if (other->nodes[i].type != nodes[i].type)
-            d++;
-        d+= (nodes[i].bias - other->nodes[i].bias);
+//        ActivationFunc t1 = other->nodes[i].type;
+//        ActivationFunc t2 = nodes[i].type;
+//        if (t1 > t2)
+//            std::swap(t1, t2);
+//        if (t1 != t2) {
+//            if ((t1 == TANH_FUNC && t2 == STEP_FUNC) || (t1 == GAUSSIAN_FUNC && t2 == SIN_FUNC))
+//                d += 1;
+//            else
+//                d += 2;
+//        }
+//        d+= (nodes[i].bias - other->nodes[i].bias);
+//        d+= (nodes[i].param1 - other->nodes[i].param1);
+        double d11 = 0;
+        double d21 = 0;
+
+        double d12 = 0;
+        double d22 = 0;
+        
+        if (i < nodes.size()) {
+            d11 = applyActivationFunc(nodes[i], 0) - applyActivationFunc(nodes[i], 1);
+            d21 = applyActivationFunc(nodes[i], -1) - applyActivationFunc(nodes[i], 0);
+        }
+        if (i < other->nodes.size()) {
+            d12 = applyActivationFunc(other->nodes[i], 0) - applyActivationFunc(other->nodes[i], 1);
+            d22 = applyActivationFunc(other->nodes[i], -1) - applyActivationFunc(other->nodes[i], 0);
+        }
+        
+        d += fabs((d11 - d21)/2 - (d12 - d22)/2);
     }
     return d;
 }
@@ -357,40 +384,6 @@ std::vector<std::vector<double> > BasicNN::simulateSequence(const std::vector<st
     
     return allOuputs;
 }
-
-
-static double applyActivationFunc(Node n, double inputSum)
-{
-    double output;
-    
-    switch (n.type) {
-        case STEP_FUNC:
-            if (inputSum > n.param1)
-                output = n.activatedVal;
-            else
-                output = n.deactivatedVal;
-            break;
-        case TANH_FUNC:
-            output = tanh(inputSum/exp(n.param1));
-            break;
-        case SIN_FUNC:
-            output = sin(inputSum*exp(n.param1));
-            break;
-        case GAUSSIAN_FUNC:
-        {
-            double x = inputSum - n.param1;
-            output = 2*exp(-x*x) - 1;
-            break;
-        }
-        default:
-            output = inputSum;
-            break;
-    }
-    
-    return output;
-}
-
-
 
 double BasicNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs)
 {

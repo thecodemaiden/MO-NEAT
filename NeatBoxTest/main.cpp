@@ -15,21 +15,21 @@ int main(int argc, const char * argv[])
 {
     std::cout << "--- NSGA-II ---\n";
     for (int i=0; i<10; i++) {
-        MONEAT *m = new MONEAT(100,100,50);
+        MONEAT *m = new MONEAT(100,100);
         
         runMult23MOTestTrain(m);
         delete m;
         
     }
-    std::cout << "--- SPEA2 ---\n";
-    
-    for (int i=0; i<10; i++) {
-        SPaNEAT *s = new SPaNEAT(100,25,100);
-        
-        runMult23MOTestTrain(s);
-        delete s;
-        
-    }
+//    std::cout << "--- SPEA2 ---\n";
+//    
+//    for (int i=0; i<5; i++) {
+//        SPaNEAT *s = new SPaNEAT(100,100, 25);
+//        
+//        runMult23MOTestTrain(s);
+//        delete s;
+//        
+//    }
     
     return 0;
 }
