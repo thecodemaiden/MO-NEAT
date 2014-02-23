@@ -13,4 +13,7 @@
 #include <NEATBox/MONEAT.h>
 #include <NEATBox/SPaNEAT.h>
 
+#include <NEATBox/MNIndividual.h>
+#include <NEATBox/MNEdge.h>
+
 #endif

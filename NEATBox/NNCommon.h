@@ -34,10 +34,9 @@ struct Edge : public MNEdge {
     
     
     Edge(int from, int to)
-    :nodeFrom(from), nodeTo(to),disabled(false)
+    :nodeFrom(from), nodeTo(to),disabled(false), weight(1.0)
     {
-        // random weight
-        weight = normallyDistributed();
+    
     }
     
     Edge(const Edge& other)

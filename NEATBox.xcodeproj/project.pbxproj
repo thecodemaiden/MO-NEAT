@@ -11,6 +11,7 @@
 		E21362741881D83000A8DCF1 /* NBUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E21362721881D83000A8DCF1 /* NBUtils.cpp */; };
 		E21362751881D83000A8DCF1 /* NBUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = E21362731881D83000A8DCF1 /* NBUtils.h */; };
 		E23BE73A18B9BE6C00431841 /* RecurrentNN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E23BE73818B9BCA000431841 /* RecurrentNN.cpp */; };
+		E23BE74018BA629A00431841 /* BayesNet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E23BE73E18BA629A00431841 /* BayesNet.cpp */; };
 		E249A5EE187E154D009DFEBA /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E249A5ED187E154D009DFEBA /* main.cpp */; };
 		E249A5F4187E155D009DFEBA /* NEATBox.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E20CC51B187C445500AAA3DA /* NEATBox.dylib */; };
 		E249A5F5187E5206009DFEBA /* MONEAT.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC52C187C447E00AAA3DA /* MONEAT.cpp */; };
@@ -58,6 +59,8 @@
 		E21362731881D83000A8DCF1 /* NBUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NBUtils.h; sourceTree = "<group>"; };
 		E23BE73518B9BC7900431841 /* RecurrentNN.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RecurrentNN.h; sourceTree = "<group>"; };
 		E23BE73818B9BCA000431841 /* RecurrentNN.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RecurrentNN.cpp; sourceTree = "<group>"; };
+		E23BE73E18BA629A00431841 /* BayesNet.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BayesNet.cpp; sourceTree = "<group>"; };
+		E23BE73F18BA629A00431841 /* BayesNet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BayesNet.h; sourceTree = "<group>"; };
 		E249A5EB187E154D009DFEBA /* NeatBoxTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NeatBoxTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E249A5ED187E154D009DFEBA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		E26BA30718ADA01C00DFA8DB /* NEATBox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NEATBox.h; sourceTree = "<group>"; };
@@ -152,6 +155,16 @@
 		E20CC532187C531300AAA3DA /* Example Classes */ = {
 			isa = PBXGroup;
 			children = (
+				E23BE73D18BA627200431841 /* Bayes Net */,
+				E23BE73B18BA626200431841 /* Neural Net */,
+			);
+			name = "Example Classes";
+			path = ../NEATBox;
+			sourceTree = "<group>";
+		};
+		E23BE73B18BA626200431841 /* Neural Net */ = {
+			isa = PBXGroup;
+			children = (
 				E26BA30918ADA77F00DFA8DB /* NNCommon.h */,
 				E26BA30D18ADB0FC00DFA8DB /* NNCommon.cpp */,
 				E20CC534187C544100AAA3DA /* BasicNN.h */,
@@ -161,8 +174,16 @@
 				E26BA30B18ADA7B900DFA8DB /* LayeredNN.h */,
 				E26BA30A18ADA7B900DFA8DB /* LayeredNN.cpp */,
 			);
-			name = "Example Classes";
-			path = ../NEATBox;
+			name = "Neural Net";
+			sourceTree = "<group>";
+		};
+		E23BE73D18BA627200431841 /* Bayes Net */ = {
+			isa = PBXGroup;
+			children = (
+				E23BE73F18BA629A00431841 /* BayesNet.h */,
+				E23BE73E18BA629A00431841 /* BayesNet.cpp */,
+			);
+			name = "Bayes Net";
 			sourceTree = "<group>";
 		};
 		E249A5EC187E154D009DFEBA /* NeatBoxTest */ = {
@@ -276,6 +297,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E23BE74018BA629A00431841 /* BayesNet.cpp in Sources */,
 				E23BE73A18B9BE6C00431841 /* RecurrentNN.cpp in Sources */,
 				E249A5FA1880426B009DFEBA /* ExampleRun.cpp in Sources */,
 				E26BA30C18ADA7B900DFA8DB /* LayeredNN.cpp in Sources */,

@@ -19,10 +19,10 @@
 #include "NBUtils.h"
 
 #define RESTRICT_SPECIES 0
-#define ROULETTE_SELECT 0
+#define ROULETTE_SELECT 1
 #define INTERSPECIES 0
 
-#define TIGHT_CLUSTERS 1
+#define TIGHT_CLUSTERS 0
 #define FINE_RANK 0
 
 
@@ -85,6 +85,11 @@ static bool compareIndividuals(SystemInfo *sys1, SystemInfo *sys2)
     return sys1->rankFitness < sys2->rankFitness;
 }
 
+static bool distanceCompare(const std::pair<NEATExtendedSpecies *, double> &p1, const std::pair<NEATExtendedSpecies*, double> &p2)
+{
+    return p1.second < p2.second;
+}
+
 
 void MONEAT::spawnNextGeneration()
 {
@@ -96,7 +101,12 @@ void MONEAT::spawnNextGeneration()
         if (maxD > maxSpeciesDist)
             maxSpeciesDist = maxD;
     }
+    
+    
 #endif
+    
+    std::map<NEATExtendedSpecies *, std::vector<SystemInfo *> > newMemberMap;
+
     
     double  sharedFitnessSum = 0.0;
     for (int i=0; i<speciesList.size(); i++) {
@@ -186,17 +196,22 @@ void MONEAT::spawnNextGeneration()
             newMembers.push_back(i);
         }
         
-        // delete the breeding pop and replace with this new generation
-        for (int i=0; i< (*speciesIt)->members.size(); i++) {
-            delete (*speciesIt)->members[i];
-        }
-        (*speciesIt)->members = newMembers;
-       // (*speciesIt)->members.insert((*speciesIt)->members.end(), newMembers.begin(), newMembers.end());
+        
+        newMemberMap[*speciesIt] = newMembers;
         speciesIt++;
     }
-    // add the original population too
- //   population.insert(population.end(), newGeneration.begin(), newGeneration.end());
+    
+    for (speciesIt = speciesList.begin(); speciesIt != speciesList.end(); speciesIt++) {
+        (*speciesIt)->members = newMemberMap[*speciesIt];
+    }
+    
+    // clear out the old pop and replace with new generation
+    for (std::vector<SystemInfo *>::iterator popIter = population.begin(); popIter != population.end(); popIter++) {
+        delete *popIter;
+    }
+    
     population = newGeneration;
+    
 }
 
 NEATExtendedSpecies *MONEAT::chooseCompatibleSpecies(NEATExtendedSpecies *species, double maxDistance){
@@ -291,8 +306,10 @@ void MONEAT::updateSharedFitnesses()
             double  totalFitness = 0.0;
             std::vector<SystemInfo *>::iterator memberIterator = members.begin();
             while (memberIterator != members.end()) {
-                double invFitness = 1.0/(*memberIterator)->rankFitness;//(*memberIterator)->rankFitness/members.size();
+                double invFitness = 1.0/(*memberIterator)->rankFitness;
                 totalFitness += invFitness/members.size();
+//                double fitness = (*memberIterator)->rankFitness/members.size();
+//                totalFitness += fitness;
                 
 #if TIGHT_CLUSTERS
                 // find the central member so we can assign it as the new rep
@@ -539,6 +556,7 @@ bool MONEAT::tick()
                 std::vector<SystemInfo *> members = (*speciesIterator)->members;
                 SystemInfo *saved = new SystemInfo(*(*(members.begin() + i)));
                 individualsToSave.push_back(saved);
+
                 newMemberMap[*speciesIterator].push_back(saved);
                 done = false;
             }

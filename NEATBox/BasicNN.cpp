@@ -97,7 +97,7 @@ void BasicNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
         nodes.at(gene->nodeFrom).outdegree--;
         nodes.at(gene->nodeTo).indegree--;
     }
-    cleanup();
+    //cleanup();
 }
 
 std::vector<MNEdge *> BasicNN::connectionGenome()
@@ -258,7 +258,7 @@ Edge *BasicNN::createConnection()
             edgePos = edges.end()-1;
         }
     }
-    cleanup();
+   // cleanup();
     return new Edge(*edgePos);
 
 }
