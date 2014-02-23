@@ -55,7 +55,7 @@ void runXorExample(BaseNEAT *algo)
     
    BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
 //
-    std::cout << winner->dotFormat();
+ //   std::cout << winner->dotFormat();
 
     std::cout << "XOR score: " << xorEvaluation(winner) <<"\n\n";
 }

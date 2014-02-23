@@ -26,7 +26,7 @@ protected:
     std::vector<Node> nodes;
     std::vector<Edge> edges;
     
-    virtual std::vector<MNEdge *> insertNodeOnEdge(Edge &e);
+    virtual std::vector<MNEdge *> insertNodeOnEdge(long ePos);
 
 
 public:
@@ -75,7 +75,7 @@ private:
     std::vector<Edge> outputsFromNode(long n);
     double visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs);
 
-    void cleanup(); // if all inputs to a node are disable, disable all its outputs too!
+    void cleanup(); // check consistency (sometimes my invariants are off ):
 };
 
 #endif /* defined(__NEATBox__BaseNetwork__) */

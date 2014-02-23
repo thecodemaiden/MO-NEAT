@@ -171,7 +171,7 @@ void SPaNEAT::rankSystems()
         sys->dominationCount = 0;
         sys->distances.clear();
         
-        typename std::vector<SPSystemInfo *>::iterator innerIter;
+        std::vector<SPSystemInfo *>::iterator innerIter;
         for (innerIter = toRank.begin(); innerIter != toRank.end(); innerIter++) {
             if (*innerIter == *popIter)
                 continue;
@@ -198,7 +198,7 @@ void SPaNEAT::rankSystems()
     }
     
     
-    // now assign raw fitness based on the strengths of dominators, plus population neighborhood density
+    // now add the strengths of dominators to population neighborhood density
     for (popIter = toRank.begin(); popIter != toRank.end(); popIter++) {
         SPSystemInfo *sys = *popIter;
         std::vector<SPSystemInfo *> dominators = dominationMap[sys];
@@ -274,11 +274,13 @@ bool SPaNEAT::tick()
             sysIter = newArchive.erase(sysIter);
         }
     }
+    
+    // for debug
+    std::sort(population.begin(), population.end(), compareIndividuals);
 
     generations++;
 
     // delete everything in the old population
-    // XXX: this includes the old archive (for now)
     for (sysIter = population.begin(); sysIter != population.end(); sysIter++) {
         delete  *sysIter;
     }

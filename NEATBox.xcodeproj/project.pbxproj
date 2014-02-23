@@ -12,7 +12,6 @@
 		E21362751881D83000A8DCF1 /* NBUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = E21362731881D83000A8DCF1 /* NBUtils.h */; };
 		E23BE73A18B9BE6C00431841 /* RecurrentNN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E23BE73818B9BCA000431841 /* RecurrentNN.cpp */; };
 		E249A5EE187E154D009DFEBA /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E249A5ED187E154D009DFEBA /* main.cpp */; };
-		E249A5F0187E154D009DFEBA /* NeatBoxTest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */; };
 		E249A5F4187E155D009DFEBA /* NEATBox.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E20CC51B187C445500AAA3DA /* NEATBox.dylib */; };
 		E249A5F5187E5206009DFEBA /* MONEAT.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC52C187C447E00AAA3DA /* MONEAT.cpp */; };
 		E249A5F71880422E009DFEBA /* BasicNN.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E20CC533187C544100AAA3DA /* BasicNN.cpp */; };
@@ -37,7 +36,6 @@
 			dstPath = /usr/share/man/man1/;
 			dstSubfolderSpec = 0;
 			files = (
-				E249A5F0187E154D009DFEBA /* NeatBoxTest.1 in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
@@ -62,7 +60,6 @@
 		E23BE73818B9BCA000431841 /* RecurrentNN.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RecurrentNN.cpp; sourceTree = "<group>"; };
 		E249A5EB187E154D009DFEBA /* NeatBoxTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NeatBoxTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E249A5ED187E154D009DFEBA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = NeatBoxTest.1; sourceTree = "<group>"; };
 		E26BA30718ADA01C00DFA8DB /* NEATBox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NEATBox.h; sourceTree = "<group>"; };
 		E26BA30918ADA77F00DFA8DB /* NNCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NNCommon.h; sourceTree = "<group>"; };
 		E26BA30A18ADA7B900DFA8DB /* LayeredNN.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LayeredNN.cpp; sourceTree = "<group>"; };
@@ -177,7 +174,6 @@
 				E20CC53C187C621B00AAA3DA /* ExampleRun.h */,
 				E20CC53B187C621B00AAA3DA /* ExampleRun.cpp */,
 				E249A5ED187E154D009DFEBA /* main.cpp */,
-				E249A5EF187E154D009DFEBA /* NeatBoxTest.1 */,
 			);
 			path = NeatBoxTest;
 			sourceTree = "<group>";

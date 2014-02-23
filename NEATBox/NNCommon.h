@@ -12,12 +12,13 @@
 #include <string>
 #include "MNEdge.h"
 #include "NBUtils.h"
+#include "assert.h"
 
 enum ActivationFunc {
-    TANH_FUNC,
-    STEP_FUNC,
-    FUNC_SENTINEL,
     GAUSSIAN_FUNC,
+    TANH_FUNC,
+    FUNC_SENTINEL,
+    STEP_FUNC,
     SIN_FUNC,
 };
 
@@ -79,15 +80,13 @@ struct Node {
     int indegree; // helps with inserting new connections
     int outdegree;
     
-    int depth; //in case we're keeping strict structure
-    
     double bias;
     
     double param1 = 0.0;
     
     double activatedVal = 1.0;
     double deactivatedVal = -1.0;
-    Node():indegree(0), outdegree(0), bias(0), param1(0), depth(0){
+    Node():indegree(0), outdegree(0), bias(0), param1(0){
         type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
     };
 };
