@@ -28,4 +28,11 @@ double trainMult3(MNIndividual *individual);
 double testMult2(BasicNN *individual);
 double testMult3(BasicNN *individual);
 
+// --- Sequence test ---
+
+// have all inputs so far been even numbers?
+double isAllEven(MNIndividual *individual);
+//double trainAllEven(BasicNN * individual);
+//double testAllEven(BasicNN * individual);
+
 #endif /* defined(__NEATBox__ExampleGoals__) */

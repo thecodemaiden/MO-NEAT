@@ -6,7 +6,7 @@
 //  Copyright (c) 2014 Adeola Bannis. All rights reserved.
 //
 
-#include "BasicNN.h"
+#include "RecurrentNN.h"
 #include <algorithm>
 #include <sstream>
 #include <cmath>
@@ -27,7 +27,7 @@ private:
     long n;
 };
 
-BasicNN::BasicNN(int nInputs, int nOutputs)
+RecurrentNN::RecurrentNN(int nInputs, int nOutputs)
 {
     for (int i=0; i<nInputs; i++) {
         nodes.push_back(Node());
@@ -51,10 +51,10 @@ BasicNN::BasicNN(int nInputs, int nOutputs)
     
 }
 
-void BasicNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
+void RecurrentNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
 {
     
-    BasicNN *parent = dynamic_cast<BasicNN *>(p);
+    RecurrentNN *parent = dynamic_cast<RecurrentNN *>(p);
     Edge *gene = dynamic_cast<Edge *>(g);
     
     if (!parent || !gene)
@@ -97,7 +97,7 @@ void BasicNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
 
 }
 
-std::vector<MNEdge *> BasicNN::connectionGenome()
+std::vector<MNEdge *> RecurrentNN::connectionGenome()
 {
     std::vector<MNEdge *> genome;
     for (std::vector<Edge>::iterator it = edges.begin(); it != edges.end(); it++) {
@@ -106,7 +106,7 @@ std::vector<MNEdge *> BasicNN::connectionGenome()
     return genome;
 }
 
-void BasicNN::mutateConnectionWeights(double p_m)
+void RecurrentNN::mutateConnectionWeights(double p_m)
 {
     // pick a random edge (disabled is fine?) and mutate its weight
     for (size_t pos = 0; pos < edges.size(); pos++) {
@@ -119,7 +119,7 @@ void BasicNN::mutateConnectionWeights(double p_m)
     }
 }
 
-void BasicNN::mutateNodes(double p_m)
+void RecurrentNN::mutateNodes(double p_m)
 {
     double selector = (double)rand()/RAND_MAX;
     
@@ -136,7 +136,7 @@ void BasicNN::mutateNodes(double p_m)
 }
 
 
-std::vector<MNEdge *> BasicNN::createNode()
+std::vector<MNEdge *> RecurrentNN::createNode()
 {
     // if all edges are disabled, that's BAD and we are uselesssssss
     long activeEdges = std::count_if(edges.begin(), edges.end(), [](Edge e) {return !e.disabled;});
@@ -153,7 +153,7 @@ std::vector<MNEdge *> BasicNN::createNode()
         return insertNodeOnEdge(toSplit);
 }
 
-std::vector<MNEdge *> BasicNN::insertNodeOnEdge(Edge &e)
+std::vector<MNEdge *> RecurrentNN::insertNodeOnEdge(Edge &e)
 {
     uint nextNode = (uint)nodes.size();
     Node newNode = Node();
@@ -181,7 +181,7 @@ std::vector<MNEdge *> BasicNN::insertNodeOnEdge(Edge &e)
     return toReturn;
 }
 
-//std::vector<Edge>  BasicNN::insertNodeAsNode(int n)
+//std::vector<Edge>  RecurrentNN::insertNodeAsNode(int n)
 //{
 //    Node newNode = Node();
 //    Node oldNode = nodes[n];
@@ -214,12 +214,11 @@ std::vector<MNEdge *> BasicNN::insertNodeOnEdge(Edge &e)
 //    return toReturn;
 //}
 
-
-Edge *BasicNN::createConnection()
+Edge *RecurrentNN::createConnection()
 {
 
     // pick two existing, unconnected nodes and connect them - can connect self to self!
-    long maxConnections = nodes.size()*( nodes.size() - 1);
+    long maxConnections = nodes.size()*nodes.size();
 
     long activeEdges = std::count_if(edges.begin(), edges.end(), [](Edge e) {return !e.disabled;});
     
@@ -229,7 +228,7 @@ Edge *BasicNN::createConnection()
     
     if (activeEdges < maxConnections) {
         // chose a source node at random
-        long maxDegree = nodes.size() - 1;
+        long maxDegree = nodes.size();
         Node source;
         uint pos;
         do {
@@ -257,9 +256,6 @@ Edge *BasicNN::createConnection()
         do {
             pos = arc4random_uniform((uint)nodes.size());
          
-            if (pos == newEdge.nodeFrom)
-                continue; // don't connect to ourselves!
-            
             sink = nodes.at(pos);
             newEdge.nodeTo = pos;
             edgePos = std::find(existingEdges.begin(), existingEdges.end(), newEdge);
@@ -282,7 +278,7 @@ Edge *BasicNN::createConnection()
     //return &(toReturn);
 }
 
-double BasicNN::connectionDifference(MNEdge *e1, MNEdge *e2)
+double RecurrentNN::connectionDifference(MNEdge *e1, MNEdge *e2)
 {
     
     Edge *first = dynamic_cast<Edge *>(e1);
@@ -294,9 +290,9 @@ double BasicNN::connectionDifference(MNEdge *e1, MNEdge *e2)
     return fabs(first->weight - second->weight);
 }
 
-double BasicNN::nodeDifference(MNIndividual *ind)
+double RecurrentNN::nodeDifference(MNIndividual *ind)
 {
-    BasicNN *other = dynamic_cast<BasicNN *>(ind);
+    RecurrentNN *other = dynamic_cast<RecurrentNN *>(ind);
     if (!other)
         return INFINITY;
     
@@ -305,7 +301,18 @@ double BasicNN::nodeDifference(MNIndividual *ind)
     long length = std::max(other->nodes.size(), nodes.size());
     double d = 0;
     for (long i=0; i<length; i++) {
-
+//        ActivationFunc t1 = other->nodes[i].type;
+//        ActivationFunc t2 = nodes[i].type;
+//        if (t1 > t2)
+//            std::swap(t1, t2);
+//        if (t1 != t2) {
+//            if ((t1 == TANH_FUNC && t2 == STEP_FUNC) || (t1 == GAUSSIAN_FUNC && t2 == SIN_FUNC))
+//                d += 1;
+//            else
+//                d += 2;
+//        }
+//        d+= (nodes[i].bias - other->nodes[i].bias);
+//        d+= (nodes[i].param1 - other->nodes[i].param1);
         double d11 = 0;
         double d21 = 0;
 
@@ -326,19 +333,19 @@ double BasicNN::nodeDifference(MNIndividual *ind)
     return d;
 }
 
-long BasicNN::numberOfNodes()
+long RecurrentNN::numberOfNodes()
 {
     return nodes.size();
 }
 
-long BasicNN::numberOfEdges()
+long RecurrentNN::numberOfEdges()
 {
     return edges.size();
 }
 
 
 
-std::vector<double> BasicNN::simulateSequence(const std::vector<double> &inputValues)
+std::vector<std::vector<double> > RecurrentNN::simulateSequence(const std::vector<std::vector<double> > &inputValues, int delay)
 {
     cleanup();
     // ensure that we have the right number of input values
@@ -346,10 +353,10 @@ std::vector<double> BasicNN::simulateSequence(const std::vector<double> &inputVa
     
     std::vector<std::vector<double> > allOuputs;
     
+    for (long i=0; i<inputValues.size(); i++) {
         std::vector<double> currentOutputs = std::vector<double>(nNodes);
-        std::vector<double> currentInputs = inputValues;
-    
-        for (long steps = -1; steps<1; steps++) {
+        std::vector<double> currentInputs = inputValues[i];
+        for (long steps = -1; steps<delay; steps++) {
             std::vector<double> lastOutputs = currentOutputs;
             currentOutputs = nodeOutputsForInputs(currentInputs, currentOutputs);
             if (lastOutputs == currentOutputs) {
@@ -362,12 +369,13 @@ std::vector<double> BasicNN::simulateSequence(const std::vector<double> &inputVa
             long node = *it;
             finalOutputs.push_back(currentOutputs[node]);
         }
+        allOuputs.push_back(finalOutputs);
+    }
     
-    
-    return finalOutputs;
+    return allOuputs;
 }
 
-double BasicNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs)
+double RecurrentNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs)
 {
     Node n = nodes[i];
     visitedNodes.insert(i);
@@ -389,7 +397,7 @@ double BasicNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<doub
     return inputSum;
 }
 
- std::vector<double> BasicNN::nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs)
+ std::vector<double> RecurrentNN::nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs)
 {
     std::vector<double> newOutputs;
     
@@ -415,7 +423,7 @@ double BasicNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<doub
 
 
 
-std::vector<Edge> BasicNN::inputsToNode(long n)
+std::vector<Edge> RecurrentNN::inputsToNode(long n)
 {
     
     std::vector<Edge> found;
@@ -429,7 +437,7 @@ std::vector<Edge> BasicNN::inputsToNode(long n)
     return found;
 }
 
-std::vector<Edge> BasicNN::outputsFromNode(long n)
+std::vector<Edge> RecurrentNN::outputsFromNode(long n)
 {
     
     std::vector<Edge> found;
@@ -443,7 +451,7 @@ std::vector<Edge> BasicNN::outputsFromNode(long n)
     return found;
 }
 
-std::string BasicNN::display()
+std::string RecurrentNN::display()
 {
     // sort the edges by source node and display
     
@@ -469,7 +477,7 @@ std::string BasicNN::display()
     return ss.str();
 }
 
-std::string BasicNN::dotFormat(std::string graphName)
+std::string RecurrentNN::dotFormat(std::string graphName)
 {
     std::ostringstream ss;
 
@@ -527,7 +535,7 @@ std::string BasicNN::dotFormat(std::string graphName)
     return ss.str();
 }
 
-void BasicNN::cleanup()
+void RecurrentNN::cleanup()
 {
     bool done;
     do {

@@ -15,10 +15,10 @@
 
 enum ActivationFunc {
     TANH_FUNC,
-    GAUSSIAN_FUNC,
     STEP_FUNC,
-    SIN_FUNC,
     FUNC_SENTINEL,
+    GAUSSIAN_FUNC,
+    SIN_FUNC,
 };
 
 std::string activationFuncName(ActivationFunc f);

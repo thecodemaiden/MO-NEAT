@@ -33,6 +33,11 @@ MNIndividual *createMult3Network()
     return new BasicNN(4,2);
 }
 
+MNIndividual *createAllEvenNetwork()
+{
+    return new BasicNN(4,1);
+}
+
 void runXorExample(BaseNEAT *algo)
 {
  //   SPaNEAT *algo = new SPaNEAT(200, 25, 200);
@@ -49,9 +54,10 @@ void runXorExample(BaseNEAT *algo)
     while (!algo->tick());
     
    BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
-//    
-    std::cout << "XOR score: " << xorEvaluation(winner) <<"\n\n";
+//
+    std::cout << winner->dotFormat();
 
+    std::cout << "XOR score: " << xorEvaluation(winner) <<"\n\n";
 }
 
 void runParityExample(BaseNEAT *algo)
@@ -115,13 +121,13 @@ void runMult23MOTestTrain(BaseNEAT *algo)
     std::cout << winners.size() << " optimal solutions found.\n";
     
     SystemInfo *bestSystem = NULL;
-    double min_diff = INFINITY;
+    double min_sum = INFINITY;
     for (std::vector<SystemInfo *>::iterator it = winners.begin(); it!=winners.end(); it++) {
-        double d= fabs((*it)->fitnesses[0] - (*it)->fitnesses[1]);
+        double d= fabs((*it)->fitnesses[0] + (*it)->fitnesses[1]);
         
-        if (d < min_diff) {
+        if (d < min_sum) {
             bestSystem = *it;
-            min_diff = d;
+            min_sum = d;
         }
     }
     
@@ -131,5 +137,30 @@ void runMult23MOTestTrain(BaseNEAT *algo)
         std::cout << "2 score: " << testMult2(winner) <<"\n";
         std::cout << "3 score: " << testMult3(winner) <<"\n\n";
     }
+}
+
+void runSequenceTest(BaseNEAT *algo)
+{
+    algo->createInitialIndividual = &createAllEvenNetwork;
+    algo->evaluationFunctions.push_back(&isAllEven);
+    
+    algo->w_disjoint = 4.0;
+    algo->w_excess = 4.0;
+    algo->w_matching = 2.0;
+    algo->w_matching_node = 2.0;
+    
+    algo->d_threshold = 4.0;
+    
+    while (!algo->tick());
+    
+    std::vector<SystemInfo *>winners = algo->optimalSolutions();
+    assert(winners.size() > 0);
+    
+    BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
+    //
+    std::cout << winner->dotFormat();
+    std::cout << "Final score: " << isAllEven(winner) <<"\n";
+
+    
 }
 

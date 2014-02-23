@@ -18,4 +18,6 @@ void runParityExample(BaseNEAT *algo);
 void runMult23SOTestTrain(BaseNEAT *algo);
 
 void runMult23MOTestTrain(BaseNEAT *algo);
+
+void runSequenceTest(BaseNEAT *algo);
 #endif /* defined(__NEATBox__ExampleRun__) */

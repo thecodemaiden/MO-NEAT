@@ -8,8 +8,12 @@
 
 #include "ExampleGoals.h"
 #include "BasicNN.h"
+#include "RecurrentNN.h"
 #include <array>
 #include <cmath>
+
+static const double yesVal = 1.0;
+static const double noVal = -1.0;
 
 double dummyEvaluation(MNIndividual *individual)
 {
@@ -27,8 +31,7 @@ double parityEvaluation(MNIndividual *i)
     
     const int numCases = 8;
     std::vector<std::array<double, 3> > inVals;
-    const double yesVal = 1.0;
-    const double noVal = -1.0;
+   
     inVals.push_back({noVal,noVal,noVal});
     inVals.push_back({noVal,noVal,yesVal});
     inVals.push_back({noVal,yesVal,noVal});
@@ -44,11 +47,9 @@ double parityEvaluation(MNIndividual *i)
     double diff = 0.0;
     for (int i=0; i<numCases; i++) {
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
-        std::vector<std::vector<double> > seqInputs;
-        seqInputs.push_back(input);
-        std::vector<std::vector<double> > seqOutputs = individual->simulateSequence(seqInputs, 2);
-
-        double v = seqOutputs.front().front();
+        
+        std::vector<double> outputs = individual->simulateSequence(input);
+        double v= outputs.front();
         
         actualOutput[i] = v;
         double d = expectedOutput[i] - v;
@@ -69,8 +70,7 @@ double xorEvaluation(MNIndividual *i)
         return -INFINITY;
     
     const int nCases = 4;
-    const double yesVal = 1.0;
-    const double noVal = -1.0;
+ 
     std::vector<std::array<double, 2> > inVals;
     
     inVals.push_back({noVal,noVal});
@@ -84,10 +84,8 @@ double xorEvaluation(MNIndividual *i)
 
     for (int i=0; i<4; i++) {
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
-        std::vector<std::vector<double> > seqInputs;
-        seqInputs.push_back(input);
-        std::vector<std::vector<double> > seqOutputs = individual->simulateSequence(seqInputs, 1);
-        std::vector<double> outputs = seqOutputs.front();
+ 
+        std::vector<double> outputs = individual->simulateSequence(input);
         actualOutput[i] = outputs.front();
     
         double d = expectedOutput[i] - outputs.front();
@@ -116,8 +114,7 @@ double trainMult2(MNIndividual *i)
     
     const int nCases = 10;
     
-    const double yesVal = 1.0;
-    const double noVal = -1.0;
+
     
     std::vector<std::array<double, 4> > inVals;
     std::vector<std::array<double, 2> > expectedOutput;
@@ -161,10 +158,9 @@ double trainMult2(MNIndividual *i)
     double diff_2 = 0;
     for (int i=0; i<nCases; i++) {
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
-        std::vector<std::vector<double> > seqInputs;
-        seqInputs.push_back(input);
-        std::vector<std::vector<double> > seqOutputs = individual->simulateSequence(seqInputs, 1);
-        std::vector<double> outputs = seqOutputs.front();
+        
+        std::vector<double> outputs = individual->simulateSequence(input);
+
         actualOutput.push_back( {outputs[0], outputs[1]});
         
         double d_3 = expectedOutput[i][0] - outputs[0];
@@ -187,8 +183,7 @@ double trainMult3(MNIndividual *i)
     
     const int nCases = 10;
     
-    const double yesVal = 1.0;
-    const double noVal = -1.0;
+
     
     std::vector<std::array<double, 4> > inVals;
     std::vector<std::array<double, 2> > expectedOutput;
@@ -234,10 +229,9 @@ double trainMult3(MNIndividual *i)
     double diff_2 = 0;
     for (int i=0; i<nCases; i++) {
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
-        std::vector<std::vector<double> > seqInputs;
-        seqInputs.push_back(input);
-        std::vector<std::vector<double> > seqOutputs = individual->simulateSequence(seqInputs, 1);
-        std::vector<double> outputs = seqOutputs.front();
+        
+        std::vector<double> outputs = individual->simulateSequence(input);
+        
         actualOutput.push_back( {outputs[0], outputs[1]});
         
         double d_3 = expectedOutput[i][0] - outputs[0];
@@ -257,9 +251,7 @@ double testMult2(BasicNN *individual)
 
     
     const int nCases = 6;
-    const double yesVal = 1.0;
-    const double noVal = -1.0;
-    
+
     std::vector<std::array<double, 4> > inVals;
     std::vector<std::array<double, 2> > expectedOutput;
     
@@ -289,14 +281,14 @@ double testMult2(BasicNN *individual)
     double diff_2 = 0;
     for (int i=0; i<nCases; i++) {
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
-        std::vector<std::vector<double> > seqInputs;
-        seqInputs.push_back(input);
-        std::vector<std::vector<double> > seqOutputs = individual->simulateSequence(seqInputs, 1);
-        std::vector<double> outputs = seqOutputs.front();
-        actualOutput.push_back({outputs[0], outputs[1]});
+        
+        std::vector<double> outputs = individual->simulateSequence(input);
+        
+        actualOutput.push_back( {outputs[0], outputs[1]});
         
         double d_3 = expectedOutput[i][0] - outputs[0];
         double d_2 = expectedOutput[i][1] - outputs[1];
+        
         diff_2 += d_2*d_2;
         diff_3 += d_3*d_3;
         
@@ -312,8 +304,7 @@ double testMult3(BasicNN *individual)
 {
     
     const int nCases = 6;
-    const double yesVal = 1.0;
-    const double noVal = -1.0;
+
     
     std::vector<std::array<double, 4> > inVals;
     std::vector<std::array<double, 2> > expectedOutput;
@@ -344,11 +335,10 @@ double testMult3(BasicNN *individual)
     double diff_2 = 0;
     for (int i=0; i<nCases; i++) {
         std::vector<double> input = std::vector<double>(inVals[i].begin(), inVals[i].end());
-        std::vector<std::vector<double> > seqInputs;
-        seqInputs.push_back(input);
-        std::vector<std::vector<double> > seqOutputs = individual->simulateSequence(seqInputs, 1);
-        std::vector<double> outputs = seqOutputs.front();
-        actualOutput.push_back({outputs[0], outputs[1]});
+        
+        std::vector<double> outputs = individual->simulateSequence(input);
+        
+        actualOutput.push_back( {outputs[0], outputs[1]});
         
         double d_3 = expectedOutput[i][0] - outputs[0];
         double d_2 = expectedOutput[i][1] - outputs[1];
@@ -361,5 +351,87 @@ double testMult3(BasicNN *individual)
    // const int factor = 4;
     
     return diff;
+}
+
+#pragma mark - Recurrent
+
+static std::vector<double> bin_rep4(int n)
+{
+    if (n > 15)
+        n = 15;
+    if (n < 0)
+        n = 0;
+    
+    std::vector<double> toReturn;
+    toReturn.push_back(((n>>3)&1) ? yesVal : noVal);
+    toReturn.push_back(((n>>2)&1) ? yesVal : noVal);
+    toReturn.push_back(((n>>1)&1) ? yesVal : noVal);
+    toReturn.push_back((n&1) ? yesVal : noVal);
+    
+    return toReturn;
+}
+
+double isAllEven(MNIndividual *i)
+{
+
+    RecurrentNN *individual = dynamic_cast<RecurrentNN *>(i);
+    if (!individual)
+        return -INFINITY;
+    
+    double diff = 0;
+    
+    int allEvenRun = arc4random_uniform(10)+2;
+
+    for (int i=0; i<10; i++) {
+      //  bool allEvens = (uniformProbability() > 0.5);
+        std::vector<std::vector<double> >seqInputs;
+        bool allowOdd = i%allEvenRun == 0;
+        std::vector<double> expectedOutputs;
+        bool hadOdd = false;
+        // a sequence of 3-5 inputs
+        int nInputs = 3 + arc4random_uniform(3);
+        for (int j=0; j<nInputs; j++) {
+            int n;
+            if (allowOdd) {
+                n = arc4random_uniform(16);
+                if (n %2 == 1) {
+                    hadOdd = true;
+                }
+            } else {
+                n = arc4random_uniform(8)*2;
+            }
+            if (!hadOdd)
+                expectedOutputs.push_back(yesVal);
+            else
+                expectedOutputs.push_back(noVal);
+            
+            std::vector<double> next = bin_rep4(n);
+            seqInputs.push_back(next);
+        }
+        std::vector<std::vector<double> >seqOutputs = individual->simulateSequence(seqInputs, 1);
+        for (int j=0; j<seqOutputs.size(); j++) {
+            double retVal = seqOutputs[j].front();
+            double d = (retVal - expectedOutputs[j]);
+            if (d != 0) {
+                d = fabs(d);
+            }
+            diff += d;
+        }
+    }
+    
+    return diff;
+}
+
+double trainAllEven(BasicNN * individual)
+{
+//TBD
+    
+    return 0.0;
+}
+
+double testAllEven(BasicNN * individual)
+{
+    //TBD
+    return 0.0;
 }
 

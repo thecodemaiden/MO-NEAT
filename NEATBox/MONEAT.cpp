@@ -22,8 +22,8 @@
 #define ROULETTE_SELECT 0
 #define INTERSPECIES 0
 
-#define TIGHT_CLUSTERS 0
-#define FINE_RANK 1
+#define TIGHT_CLUSTERS 1
+#define FINE_RANK 0
 
 
 MONEAT::MONEAT(int populationSize, int maxGenerations)
@@ -127,7 +127,7 @@ void MONEAT::spawnNextGeneration()
         if (speciesList.size() == 1)
             proportionToSave = 1.0;
         
-        long numToSpawn = (proportionToSave*populationSize) - individuals.size();
+        long numToSpawn = (proportionToSave*populationSize) ;//- individuals.size();
         
         if (numToSpawn < 0)
             numToSpawn = 0;
@@ -185,18 +185,24 @@ void MONEAT::spawnNextGeneration()
             newGeneration.push_back(i);
             newMembers.push_back(i);
         }
-        (*speciesIt)->members.insert((*speciesIt)->members.end(), newMembers.begin(), newMembers.end());
+        
+        // delete the breeding pop and replace with this new generation
+        for (int i=0; i< (*speciesIt)->members.size(); i++) {
+            delete (*speciesIt)->members[i];
+        }
+        (*speciesIt)->members = newMembers;
+       // (*speciesIt)->members.insert((*speciesIt)->members.end(), newMembers.begin(), newMembers.end());
         speciesIt++;
     }
     // add the original population too
-    population.insert(population.end(), newGeneration.begin(), newGeneration.end());
-    
+ //   population.insert(population.end(), newGeneration.begin(), newGeneration.end());
+    population = newGeneration;
 }
 
 NEATExtendedSpecies *MONEAT::chooseCompatibleSpecies(NEATExtendedSpecies *species, double maxDistance){
     NEATExtendedSpecies *chosen = speciesList[uniformlyDistributed(speciesList.size())];
 
-    bool accepted = (maxDistance > 0); // if the distances are all 0, accept the first one we chose
+    bool accepted = (maxDistance == 0); // if the distances are all 0, accept the first one we chose
     while (!accepted) {
         chosen = speciesList[uniformlyDistributed(speciesList.size())];
         double d = species->speciesDist[chosen];
@@ -260,7 +266,7 @@ void MONEAT::updateSharedFitnesses()
 {
     long nSpecies = speciesList.size();
     if (verbose)
-        std::cout << nSpecies << "species \n";
+        std::cout << nSpecies << " species \n";
     
     // for each species, copy a random current member to be the representative for the next generation, and adjust the fitnesses for sharing
     // kill off a species with no members
@@ -273,24 +279,51 @@ void MONEAT::updateSharedFitnesses()
             delete extinctSpecies;
             speciesIterator = speciesList.erase(speciesIterator);
         } else {
-            long index = uniformlyDistributed(members.size());
-            MNIndividual *rep = (members[index]->individual);
-            delete (*speciesIterator)->representative;
-            (*speciesIterator)->representative = rep->clone();
+    
+            
+#if TIGHT_CLUSTERS
+            SystemInfo *centroid = members.front();
+            double minDist = INFINITY;
+#endif
             
             
             // update the fitnesses
             double  totalFitness = 0.0;
-            typename std::vector<SystemInfo *>::iterator memberIterator = members.begin();
+            std::vector<SystemInfo *>::iterator memberIterator = members.begin();
             while (memberIterator != members.end()) {
                 double invFitness = 1.0/(*memberIterator)->rankFitness;//(*memberIterator)->rankFitness/members.size();
                 totalFitness += invFitness/members.size();
+                
+#if TIGHT_CLUSTERS
+                // find the central member so we can assign it as the new rep
+                double myMin = INFINITY;
+                for (std::vector<SystemInfo *>::iterator it = memberIterator+1; it != members.end(); it++) {
+                    double d = genomeDistance((*it)->individual, (*memberIterator)->individual);
+                    if (d < myMin)
+                        myMin = d;
+                }
+                if (myMin < minDist) {
+                    minDist = myMin;
+                    centroid = *memberIterator;
+                }
+#endif
                 memberIterator++;
             }
             
             (*speciesIterator)->totalSharedFitness = totalFitness;
             (*speciesIterator)->speciesDist.clear();
+            
+#if TIGHT_CLUSTERS
+            MNIndividual *rep = centroid->individual;
+#else
+            long index = uniformlyDistributed(members.size());
+            MNIndividual *rep = (members[index]->individual);
+#endif
+            
+            delete (*speciesIterator)->representative;
+            (*speciesIterator)->representative = rep->clone();
             speciesIterator++;
+
         }
     }
     
@@ -445,17 +478,13 @@ bool MONEAT::tick()
     
     bool last_run =  (generations >= maxGenerations) ;
     
+    
     {
         // clear species membership lists
         std::vector<NEATExtendedSpecies *>::iterator speciesIterator = speciesList.begin();
         while (speciesIterator != speciesList.end()) {
-#if RESTRICT_SPECIES
             (*speciesIterator)->members.clear();
             speciesIterator++;
-#else
-            delete *speciesIterator;
-            speciesIterator = speciesList.erase(speciesIterator);
-#endif
         }
     }
     
@@ -484,8 +513,8 @@ bool MONEAT::tick()
         double proportionToSave = (fitness)/sharedFitnessSum;
         long numToSave = std::min((size_t)(proportionToSave*populationSize), (*speciesIterator)->members.size());
         
-        if (numToSave > 1)
-            numToSave /= 2;
+//        if (numToSave > 1)
+//            numToSave /= 2;
         
         if (numToSave > 0) {
             std::sort((*speciesIterator)->members.begin(), (*speciesIterator)->members.end(), compareIndividuals);
@@ -543,8 +572,6 @@ bool MONEAT::tick()
         delete *it;
         it = population.erase(it);
     }
-    
-
     
     population = individualsToSave;
 

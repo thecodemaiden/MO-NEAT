@@ -13,14 +13,15 @@
 
 int main(int argc, const char * argv[])
 {
-    std::cout << "--- NSGA-II ---\n";
-    for (int i=0; i<10; i++) {
-        MONEAT *m = new MONEAT(100,100);
-        
-        runMult23MOTestTrain(m);
+ //   std::cout << "--- NSGA-II ---\n";
+ //   for (int i=0; i<10; i++) {
+        SPaNEAT *m = new SPaNEAT(150,100, 40);
+        m->verbose = true;
+        runXorExample(m);
         delete m;
         
-    }
+   // }
+//    
 //    std::cout << "--- SPEA2 ---\n";
 //    
 //    for (int i=0; i<5; i++) {
