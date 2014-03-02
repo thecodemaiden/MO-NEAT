@@ -20,7 +20,8 @@
 
 // the internal representation of your graph is up to you
 // this is a weighted directed graph, the standard model of a NN
-class BasicNN : public virtual MNIndividual
+// now enforcing acyclicity (word?)
+class BasicNN : public virtual MNIndividual, public DAGNN
 {
 protected:
     std::vector<Node> nodes;
@@ -52,7 +53,6 @@ public:
 #pragma mark - End of necessary methods
     
     // simulate the network for evaluation
-    // we generate recurrent networks that may wish to simulate a sequence
     std::vector<double> simulateSequence(const std::vector<double> &inputValues);
     
     std::string display();
@@ -71,10 +71,14 @@ private:
     
     // helpers for simulation
     std::vector<double> nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs);
+    std::vector<Edge> inputsToNode(long n, std::vector<Edge> e_list);
+    std::vector<Edge> outputsFromNode(long n, std::vector<Edge> e_list);
     std::vector<Edge> inputsToNode(long n);
     std::vector<Edge> outputsFromNode(long n);
     double visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs);
 
+    std::vector<std::vector<long> > topoSort();  // each vector contains nodes at the same topo level
+    
     void cleanup(); // check consistency (sometimes my invariants are off ):
 };
 

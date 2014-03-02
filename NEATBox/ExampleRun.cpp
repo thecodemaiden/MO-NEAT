@@ -9,6 +9,7 @@
 #include "ExampleRun.h"
 
 #include "BasicNN.h"
+#include "RecurrentNN.h"
 #include "ExampleGoals.h"
 
 #include "SPaNEAT.h"
@@ -35,23 +36,23 @@ MNIndividual *createMult3Network()
 
 MNIndividual *createAllEvenNetwork()
 {
-    return new BasicNN(4,1);
+    return new RecurrentNN(4,1);
 }
 
-void runXorExample(BaseNEAT *algo)
+void runXorExample(BaseNEAT *algo, long maxGenerations)
 {
- //   SPaNEAT *algo = new SPaNEAT(200, 25, 200);
     algo->createInitialIndividual = &createXorNetwork;
     algo->evaluationFunctions.push_back(&xorEvaluation);
     
-    algo->w_disjoint = 3.0;
-    algo->w_excess = 2.0;
-    algo->w_matching = 2.0;
+    algo->w_disjoint = 4.0;
+    algo->w_excess = 3.0;
+    algo->w_matching = 4.0;
     algo->w_matching_node = 3.0;
     
     algo->d_threshold = 3.0;
     
-    while (!algo->tick());
+    for (long i=0; i<maxGenerations; i++)
+        (algo->tick());
     
    BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
 //
@@ -60,7 +61,7 @@ void runXorExample(BaseNEAT *algo)
     std::cout << "XOR score: " << xorEvaluation(winner) <<"\n\n";
 }
 
-void runParityExample(BaseNEAT *algo)
+void runParityExample(BaseNEAT *algo, long maxGenerations)
 {
     algo->createInitialIndividual = &createParityNetwork;
     algo->evaluationFunctions.push_back(&parityEvaluation);
@@ -72,7 +73,8 @@ void runParityExample(BaseNEAT *algo)
     
     algo->d_threshold = 3.0;
     
-    while (!algo->tick());
+    for (long i=0; i<maxGenerations; i++)
+        (algo->tick());
     
     BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
     //
@@ -81,7 +83,7 @@ void runParityExample(BaseNEAT *algo)
     
 }
 
-void runMult23SOTestTrain(BaseNEAT *algo)
+void runMult23SOTestTrain(BaseNEAT *algo, long maxGenerations)
 {
     algo->createInitialIndividual = &createMult3Network;
     algo->evaluationFunctions.push_back(&trainMult23);
@@ -93,7 +95,8 @@ void runMult23SOTestTrain(BaseNEAT *algo)
     
     algo->d_threshold = 3.0;
     
-    while (!algo->tick());
+    for (long i=0; i<maxGenerations; i++)
+        (algo->tick());
     
     BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
     
@@ -101,7 +104,7 @@ void runMult23SOTestTrain(BaseNEAT *algo)
     std::cout << "3 score: " << testMult3(winner) <<"\n\n";
 }
 
-void runMult23MOTestTrain(BaseNEAT *algo)
+void runMult23MOTestTrain(BaseNEAT *algo, long maxGenerations)
 {
     algo->createInitialIndividual = &createMult3Network;
     algo->evaluationFunctions.push_back(&trainMult2);
@@ -114,7 +117,8 @@ void runMult23MOTestTrain(BaseNEAT *algo)
     
     algo->d_threshold = 4.0;
     
-    while (!algo->tick());
+    for (long i=0; i<maxGenerations; i++)
+        (algo->tick());
     
     std::vector<SystemInfo *>winners = algo->optimalSolutions();
     assert(winners.size() > 0);
@@ -139,7 +143,7 @@ void runMult23MOTestTrain(BaseNEAT *algo)
     }
 }
 
-void runSequenceTest(BaseNEAT *algo)
+void runSequenceTest(BaseNEAT *algo, long maxGenerations)
 {
     algo->createInitialIndividual = &createAllEvenNetwork;
     algo->evaluationFunctions.push_back(&isAllEven);
@@ -151,12 +155,13 @@ void runSequenceTest(BaseNEAT *algo)
     
     algo->d_threshold = 4.0;
     
-    while (!algo->tick());
+    for (long i=0; i<maxGenerations; i++)
+        (algo->tick());
     
     std::vector<SystemInfo *>winners = algo->optimalSolutions();
     assert(winners.size() > 0);
     
-    BasicNN *winner = dynamic_cast<BasicNN *>(algo->optimalSolutions()[0]->individual);
+    RecurrentNN *winner = dynamic_cast<RecurrentNN *>(algo->optimalSolutions()[0]->individual);
     //
     std::cout << winner->dotFormat();
     std::cout << "Final score: " << isAllEven(winner) <<"\n";

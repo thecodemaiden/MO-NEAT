@@ -34,13 +34,13 @@ struct RecurrentNode : Node {
 
 // the internal representation of your graph is up to you
 // this is a weighted directed graph, the standard model of a NN
-class RecurrentNN : public virtual MNIndividual
+class RecurrentNN : public virtual MNIndividual, public CycledNN
 {
 protected:
     std::vector<Node> nodes;
-    std::vector<Edge> edges;
+    std::vector<DelayEdge> edges;
     
-    virtual std::vector<MNEdge *> insertNodeOnEdge(Edge &e);
+    virtual std::vector<MNEdge *> insertNodeOnEdge(long pos);
 
 
 public:
@@ -56,7 +56,7 @@ public:
     virtual void mutateConnectionWeights(double p_m);
    virtual  void mutateNodes(double p_m);
    virtual  std::vector<MNEdge *> createNode();
-   virtual  Edge *createConnection();
+   virtual  DelayEdge *createConnection();
     
    virtual  double connectionDifference(MNEdge *e1, MNEdge *e2);
     
@@ -65,7 +65,6 @@ public:
     
 #pragma mark - End of necessary methods
     
-    // simulate the network for evaluation
     // we generate recurrent networks that may wish to simulate a sequence
     std::vector<std::vector<double> > simulateSequence(const std::vector<std::vector<double> > &inputValues, int delay);
     
@@ -83,13 +82,20 @@ private:
     std::set<long> outputNodes;
     
     
+    std::vector<std::vector<long> > cycleSort(); // use Tarjan's algorithm to find cycles, enforce delays in cycles
+    struct CycleNode; // helper struct for cycleSort
+    // recursive helper function
+    void strongConnect(long v, long index, std::vector<long> &stack,
+                                    std::vector<RecurrentNN::CycleNode> &nodes,  std::vector<std::vector<long> > &components);
+
+
     // helpers for simulation
     std::vector<double> nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs);
-    std::vector<Edge> inputsToNode(long n);
-    std::vector<Edge> outputsFromNode(long n);
+    std::vector<DelayEdge> inputsToNode(long n);
+    std::vector<DelayEdge> outputsFromNode(long n);
     double visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs);
 
-    void cleanup(); // if all inputs to a node are disable, disable all its outputs too!
+
 };
 
 #endif /* defined(__NEATBox__RecurrentNN__) */

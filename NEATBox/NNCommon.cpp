@@ -25,10 +25,12 @@ std::string activationFuncName(ActivationFunc f)
         case STEP_FUNC:
             name = "THRESHOLD";
             break;
+        case LIN_FUNC:
+            name = "LINEAR";
+            break;
         default:
             break;
     }
-    // return name.str();
     return name;
 }
 
@@ -55,6 +57,7 @@ double applyActivationFunc(Node n, double inputSum)
             output = 2*exp(-x*x) - 1;
             break;
         }
+        case LIN_FUNC:
         default:
             output = inputSum;
             break;

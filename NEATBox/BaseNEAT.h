@@ -13,7 +13,6 @@
 #include "MNIndividual.h"
 #include <vector>
 
-
 class BaseNEAT {
 protected:
     // define your population yourself...
@@ -21,7 +20,6 @@ protected:
     std::vector<InnovationInfo *> newConnections;
     
     long populationSize;
-    long maxGenerations;
     
     long generations;
     
@@ -52,10 +50,10 @@ protected:
    
     
 public:
-    BaseNEAT(long populationSize, long maxGenerations);
+    BaseNEAT(long populationSize);
     virtual ~BaseNEAT(){};
     
-    virtual bool tick() = 0;
+    virtual void tick() = 0;
     virtual std::vector<SystemInfo *> optimalSolutions();
 #pragma mark - Function pointers - MUST BE SET OR ELSE
     // MUST SET
@@ -74,11 +72,11 @@ public:
     double p_c = 0.01;
     
     // mutation probabilities
-    double p_m_node_ins = 0.1; // how likely we are to add a new node
-    double p_m_conn_ins = 0.2;   // how likely we are to add a new connection
+    double p_m_node_ins = 0.05; // how likely we are to add a new node
+    double p_m_conn_ins = 0.1;   // how likely we are to add a new connection
     
-    double p_m_node = 0.3; // how likely we are to mutate each existing node
-    double p_m_conn = 0.3; // how likely are we to mutate each existing connection
+    double p_m_node = 0.2; // how likely we are to mutate each existing node
+    double p_m_conn = 0.2; // how likely are we to mutate each existing connection
     
     double d_threshold = 3.0; // threshold distance - a difference bigger than this will exclude an individual from a species
     

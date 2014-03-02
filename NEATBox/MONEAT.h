@@ -48,10 +48,10 @@ protected:
     NEATExtendedSpecies *chooseCompatibleSpecies(NEATExtendedSpecies *species, double maxDist); // fitness proportionate selection
     
 public:
-    MONEAT(int populationSize, int maxGenerations);
+    MONEAT(int populationSize);
     ~MONEAT();
     
-    bool tick();
+    void tick();
 
 private:
     int nextSpeciesNumber;

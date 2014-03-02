@@ -11,6 +11,7 @@
 #include <sstream>
 #include <cmath>
 #include <assert.h>
+#include <queue>
 
 // locate incoming and outgoing edges for a node number
 struct has_input {
@@ -27,7 +28,23 @@ private:
     long n;
 };
 
+static long topoRank(std::vector<std::vector<long> >sorted, long node)
+{
+    long rank = -1;
+    
+    for (long i=0; i<sorted.size(); i++) {
+        for (long j=0; j<sorted[i].size(); j++) {
+            if (sorted[i][j] == node) {
+                rank = i;
+                break;
+            }
+        }
+    }
+    return rank;
+}
+
 BasicNN::BasicNN(int nInputs, int nOutputs)
+:MNIndividual(), DAGNN()
 {
     for (int i=0; i<nInputs; i++) {
         nodes.push_back(Node());
@@ -51,6 +68,8 @@ BasicNN::BasicNN(int nInputs, int nOutputs)
     
 }
 
+
+
 void BasicNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
 {
     
@@ -62,6 +81,20 @@ void BasicNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
     
     if (gene->nodeFrom < 0 || gene->nodeTo < 0)
         return; // invalid
+    
+    
+    // determine if this addition will violate DAG
+    std::vector<std::vector<long> > currentTopo = topoSort();
+    long sourceRank = topoRank(currentTopo, gene->nodeFrom);
+    long sinkRank = topoRank(currentTopo, gene->nodeTo);
+    
+    if ((sourceRank > -1 && sinkRank > -1) &&  sourceRank > sinkRank) {
+        // violates!
+        // let's swap source and sink - it means we're probably overwriting an existing gene, but let's see what happens
+        std::swap(gene->nodeFrom, gene->nodeTo);
+       // return;
+    }
+    
     
     std::vector<Edge>::iterator found = std::find(edges.begin(), edges.end(), *gene);
     
@@ -97,7 +130,6 @@ void BasicNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
         nodes.at(gene->nodeFrom).outdegree--;
         nodes.at(gene->nodeTo).indegree--;
     }
-    //cleanup();
 }
 
 std::vector<MNEdge *> BasicNN::connectionGenome()
@@ -114,10 +146,9 @@ void BasicNN::mutateConnectionWeights(double p_m)
     // pick a random edge (disabled is fine?) and mutate its weight
     for (size_t pos = 0; pos < edges.size(); pos++) {
         if (uniformProbability() < p_m) {
-            double var = normallyDistributed();
             Edge &toMutate = edges.at(pos);
-            
-            toMutate.weight = var;
+            double var = normallyDistributed(toMutate.weight, 1);
+            toMutate.weight += var;
         }
     }
 }
@@ -131,8 +162,8 @@ void BasicNN::mutateNodes(double p_m)
         if (uniformProbability() < p_m) {
             if (selector < 0.33)
                 n.bias = normallyDistributed(n.bias, 1);
-            else if (selector < 0.67)
-                n.param1 = normallyDistributed(n.param1, 1);
+//            else if (selector < 0.67)
+//                n.param1 = normallyDistributed(n.param1, 0.2);
             else
                 n.type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
         }
@@ -152,7 +183,6 @@ std::vector<MNEdge *> BasicNN::createNode()
             pos = arc4random_uniform((uint)edges.size());
             
         } while (edges.at(pos).disabled);
-        Edge &toSplit = edges.at(pos);
 
         return insertNodeOnEdge(pos);
 }
@@ -180,13 +210,10 @@ std::vector<MNEdge *> BasicNN::insertNodeOnEdge(long ePos)
 
     
     edges.push_back(e1);
+    Edge *first = &edges.back();
+    
     edges.push_back(e2);
-    
-    cleanup();
-
-    
-    Edge *first = new Edge(e1);
-    Edge *second = new Edge(e2);
+    Edge *second = &edges.back();
     
     std::vector<MNEdge *> toReturn;
 
@@ -195,73 +222,122 @@ std::vector<MNEdge *> BasicNN::insertNodeOnEdge(long ePos)
     return toReturn;
 }
 
-
 Edge *BasicNN::createConnection()
 {
+ 
+    Edge *toReturn = NULL;
 
-    // pick two existing, unconnected nodes and connect them - can connect self to self!
-    long maxConnections = nodes.size()*( nodes.size() - 1);
-
-    long activeEdges = std::count_if(edges.begin(), edges.end(), [](Edge e) {return !e.disabled;});
+  // make sure we *can* create another connection
+    long maxTotalDegree = nodes.size()-1;
+    std::vector<long> possibleSources;
+    std::vector<long> possibleSinks;
     
-    Edge newEdge = Edge(-1,-1);
-    
-    std::vector<Edge>::iterator edgePos = edges.end();
-    
-    if (activeEdges < maxConnections) {
-        // chose a source node at random
-        long maxDegree = nodes.size() - 1;
-        Node *source = NULL;
-        uint pos;
-        do {
-            pos = arc4random_uniform((uint)nodes.size());
-            source = &nodes.at(pos);
-        } while (!source || source->outdegree >= maxDegree);
-        newEdge.nodeFrom = pos;
-        nodes.at(pos).outdegree++;
-       
-        // choose one it's not connected to yet -
-        // reduce the search space
-        std::vector<Edge> existingEdges;
-        
-        std::vector<Edge>::iterator it = edges.begin();
-        while (it != edges.end()) {
-            if (it->nodeFrom == newEdge.nodeFrom)
-                existingEdges.push_back(*it);
-            it++;
-        }
-        
-        Node *sink = NULL;
-        bool found = false;
-        
-        do {
-            pos = arc4random_uniform((uint)nodes.size());
-         
-            if (pos == newEdge.nodeFrom)
-                continue; // don't connect to ourselves!
-            
-            sink = &nodes.at(pos);
-            newEdge.nodeTo = pos;
-            edgePos = std::find(existingEdges.begin(), existingEdges.end(), newEdge);
-            
-            found = (edgePos != existingEdges.end() && !edgePos->disabled); // already enabled edge?
-            
-            
-        } while (!sink || sink->indegree >= maxDegree || found);
-        nodes.at(pos).indegree++;
-
-        if (edgePos != existingEdges.end() && edgePos->disabled) {
-            edgePos = std::find(edges.begin(), edges.end(), newEdge);
-            edgePos->disabled = false;
-        } else {
-            edges.push_back(newEdge);
-            edgePos = edges.end()-1;
+    for (long i=0; i<nodes.size(); i++) {
+        if (nodes[i].indegree+nodes[i].outdegree < maxTotalDegree) {
+            bool isInput = inputNodes.count(i) != 0;
+            if (nodes[i].indegree < maxTotalDegree && !isInput) {
+                possibleSinks.push_back(i);
+            }
+            if (nodes[i].outdegree < maxTotalDegree) {
+                possibleSources.push_back(i);
+            }
         }
     }
-   // cleanup();
-    return new Edge(*edgePos);
-
+    
+    if (!possibleSources.empty() && !possibleSinks.empty()) {
+        
+        std::vector<std::vector<long> > currentTopo = topoSort();
+        
+        //so, we can only have edges from early in topo->late in topo to maintain DAG
+        
+        long source = -1;
+        long sink = -1;
+        
+        bool acceptable = false;
+        do {
+            do{
+                source = possibleSources[arc4random_uniform(possibleSources.size())];
+                sink = possibleSinks[arc4random_uniform(possibleSinks.size())];
+            }while (sink == source) ;
+            
+            long sourceRank = topoRank(currentTopo, source);
+            long sinkRank = topoRank(currentTopo, sink);
+            
+            if (sinkRank >= sourceRank) {
+                Edge newEdge = Edge(source, sink);
+                std::vector<Edge>::iterator found = std::find(edges.begin(), edges.end(), newEdge);
+                if (found == edges.end()) {
+                    acceptable = true; // this is, in fact, a new node
+                    
+                    edges.push_back(newEdge);
+                    toReturn = &(edges.back());
+                } else if (found->disabled) {
+                    acceptable = true; // re-enabling a previously disabled connection is also allowed
+                    found->disabled = false;
+                    toReturn = &*found;
+                }
+                if (acceptable) {
+                    nodes[source].outdegree++;
+                    nodes[sink].indegree++;
+                }
+            }
+            
+        }while (!acceptable);
+    }
+    return toReturn;
 }
+
+std::vector<std::vector<long> > BasicNN::topoSort()
+{
+    std::vector<std::vector<long> > sorted;
+    
+    std::set<long> alreadySorted;
+
+    // make a copy of all nodes and edges
+    std::vector<Node> n_scratch = std::vector<Node>(nodes);
+    std::vector<Edge> e_scratch = std::vector<Edge>(edges);
+    
+    std::vector<long> nextRank;
+    // initialize the queue with nodes whose indegree is 0
+    for (long i=0; i<n_scratch.size(); i++) {
+        if (n_scratch[i].indegree == 0)
+            nextRank.push_back(i);
+    }
+    
+    while (alreadySorted.size() < n_scratch.size()) {
+        
+        assert(nextRank.size() > 0);
+        
+        alreadySorted.insert(nextRank.begin(), nextRank.end());
+        sorted.push_back(nextRank);
+        
+        std::set<Edge> toRemove;
+        for (std::vector<long>::iterator it = nextRank.begin(); it != nextRank.end(); it++) {
+            std::vector<Edge> outgoing = outputsFromNode(*it, e_scratch);
+            toRemove.insert(outgoing.begin(), outgoing.end());
+            n_scratch[*it].indegree--;
+        }
+        
+        nextRank.clear();
+        
+        for (std::set<Edge>::iterator it = toRemove.begin(); it!=toRemove.end(); it++) {
+            long n = it->nodeTo;
+            n_scratch[n].indegree--;
+            if (n_scratch[n].indegree == 0) {
+                nextRank.push_back(n);
+            }
+        }
+        
+        if (toRemove.size() > 0) {
+            e_scratch.erase(std::remove_if(e_scratch.begin(), e_scratch.end(), [toRemove](const Edge &e){
+                return toRemove.count(e) > 0;
+            }));
+        }
+    }
+    
+    return sorted;
+}
+
 
 double BasicNN::connectionDifference(MNEdge *e1, MNEdge *e2)
 {
@@ -393,31 +469,38 @@ double BasicNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<doub
     return newOutputs;
 }
 
-
-
 std::vector<Edge> BasicNN::inputsToNode(long n)
 {
-    
+    return inputsToNode(n, edges);
+}
+
+std::vector<Edge> BasicNN::outputsFromNode(long n)
+{
+    return outputsFromNode(n, edges);
+}
+
+
+std::vector<Edge> BasicNN::inputsToNode(long n, std::vector<Edge> e_list)
+{
     std::vector<Edge> found;
     
     has_input pred = has_input(n);
-    
-    std::vector<Edge>::iterator it = std::find_if(edges.begin(), edges.end(), pred);
-    for (; it != edges.end(); it = std::find_if(++it, edges.end(), pred)) {
+    std::vector<Edge>::iterator it = std::find_if(e_list.begin(), e_list.end(), pred);
+    for (; it != e_list.end(); it = std::find_if(++it, e_list.end(), pred)) {
         found.push_back(*it);
     }
     return found;
 }
 
-std::vector<Edge> BasicNN::outputsFromNode(long n)
+std::vector<Edge> BasicNN::outputsFromNode(long n, std::vector<Edge> e_list)
 {
     
     std::vector<Edge> found;
     
     has_output pred = has_output(n);
     
-    std::vector<Edge>::iterator it = std::find_if(edges.begin(), edges.end(), pred);
-    for (; it != edges.end(); it = std::find_if(++it, edges.end(), pred)) {
+    std::vector<Edge>::iterator it = std::find_if(e_list.begin(), e_list.end(), pred);
+    for (; it != e_list.end(); it = std::find_if(++it, e_list.end(), pred)) {
         found.push_back(*it);
     }
     return found;

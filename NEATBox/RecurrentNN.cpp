@@ -15,25 +15,28 @@
 // locate incoming and outgoing edges for a node number
 struct has_input {
     has_input(long n) : n(n) { }
-    bool operator()(Edge e) const { return e.nodeTo == n && !e.disabled; }
+    bool operator()(DelayEdge e) const { return e.nodeTo == n && !e.disabled; }
 private:
     long n;
 };
 
 struct has_output {
     has_output(long n) : n(n) { }
-    bool operator()(Edge e) const { return e.nodeFrom == n && !e.disabled;}
+    bool operator()(DelayEdge e) const { return e.nodeFrom == n && !e.disabled;}
 private:
     long n;
 };
 
+// need a way to detect cycles so that delays can be enforced in cycles
+
 RecurrentNN::RecurrentNN(int nInputs, int nOutputs)
+:MNIndividual(), CycledNN()
 {
     for (int i=0; i<nInputs; i++) {
         nodes.push_back(Node());
         inputNodes.insert(i);
     }
-
+    
     // connect every input to every output
     for (int j=0; j<nOutputs; j++) {
         Node n = Node();
@@ -41,7 +44,7 @@ RecurrentNN::RecurrentNN(int nInputs, int nOutputs)
         outputNodes.insert(nextNode);
         
         for (int i=0; i<nInputs; i++) {
-            Edge e = Edge(i, nextNode);
+            DelayEdge e = DelayEdge(i, nextNode);
             nodes[i].outdegree++;
             n.indegree++;
             edges.push_back(e);
@@ -55,7 +58,7 @@ void RecurrentNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
 {
     
     RecurrentNN *parent = dynamic_cast<RecurrentNN *>(p);
-    Edge *gene = dynamic_cast<Edge *>(g);
+    DelayEdge *gene = dynamic_cast<DelayEdge *>(g);
     
     if (!parent || !gene)
         return; // can't do nothin with this
@@ -63,18 +66,21 @@ void RecurrentNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
     if (gene->nodeFrom < 0 || gene->nodeTo < 0)
         return; // invalid
     
-    std::vector<Edge>::iterator found = std::find(edges.begin(), edges.end(), *gene);
+    std::vector<DelayEdge>::iterator found = std::find(edges.begin(), edges.end(), *gene);
     
     bool didDisable = false;
+    bool wasDisabled = false;
+    
     
     if (found != edges.end()) {
         found->weight = gene->weight;
+        wasDisabled = found->disabled;
         if (found->disabled == gene->disabled)
             return; // nothing more to do, don't modify in/outdegrees
         found->disabled = gene->disabled;
         didDisable = gene->disabled;
     } else {
-        
+        wasDisabled = true;
         edges.push_back(*gene);
         
         while (gene->nodeFrom >= nodes.size() || gene->nodeTo >= nodes.size()) {
@@ -94,13 +100,12 @@ void RecurrentNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
         nodes.at(gene->nodeFrom).outdegree--;
         nodes.at(gene->nodeTo).indegree--;
     }
-
 }
 
 std::vector<MNEdge *> RecurrentNN::connectionGenome()
 {
     std::vector<MNEdge *> genome;
-    for (std::vector<Edge>::iterator it = edges.begin(); it != edges.end(); it++) {
+    for (std::vector<DelayEdge>::iterator it = edges.begin(); it != edges.end(); it++) {
         genome.push_back(&*it);
     }
     return genome;
@@ -112,7 +117,7 @@ void RecurrentNN::mutateConnectionWeights(double p_m)
     for (size_t pos = 0; pos < edges.size(); pos++) {
         if (uniformProbability() < p_m) {
             double var = normallyDistributed();
-            Edge &toMutate = edges.at(pos);
+            DelayEdge &toMutate = edges.at(pos);
             
             toMutate.weight = var;
         }
@@ -123,14 +128,15 @@ void RecurrentNN::mutateNodes(double p_m)
 {
     double selector = (double)rand()/RAND_MAX;
     
-    for (size_t n = 0; n<nodes.size(); n++) {
+    for (size_t i = 0; i<nodes.size(); i++) {
+        Node &n  = nodes[i];
         if (uniformProbability() < p_m) {
             if (selector < 0.33)
-                nodes[n].bias = normallyDistributed();
-         //   else if (selector < 0.67)
-        //        nodes[n].param1 = normallyDistributed(0,2);
+                n.bias = normallyDistributed(n.bias, 1);
+            // else if (selector < 0.67)
+            //   n.param1 = normallyDistributed(n.param1, 1);
             else
-                nodes[n].type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
+                n.type = (ActivationFunc)arc4random_uniform(FUNC_SENTINEL);
         }
     }
 }
@@ -139,150 +145,154 @@ void RecurrentNN::mutateNodes(double p_m)
 std::vector<MNEdge *> RecurrentNN::createNode()
 {
     // if all edges are disabled, that's BAD and we are uselesssssss
-    long activeEdges = std::count_if(edges.begin(), edges.end(), [](Edge e) {return !e.disabled;});
-        if (activeEdges == 0)
-            return std::vector<MNEdge *>();
+    long activeEdges = std::count_if(edges.begin(), edges.end(), [](DelayEdge e) {return !e.disabled;});
+    if (activeEdges == 0)
+        return std::vector<MNEdge *>();
     
-        uint pos;
-        do {
-            pos = arc4random_uniform((uint)edges.size());
-            
-        } while (edges.at(pos).disabled);
-        Edge &toSplit = edges.at(pos);
-
-        return insertNodeOnEdge(toSplit);
+    uint pos;
+    do {
+        pos = arc4random_uniform((uint)edges.size());
+        
+    } while (edges.at(pos).disabled);
+    
+    return insertNodeOnEdge(pos);
 }
 
-std::vector<MNEdge *> RecurrentNN::insertNodeOnEdge(Edge &e)
+std::vector<MNEdge *> RecurrentNN::insertNodeOnEdge(long ePos)
 {
+    
     uint nextNode = (uint)nodes.size();
     Node newNode = Node();
-    newNode.indegree = newNode.outdegree = 1;
+    
+    bool wasDisabled = edges[ePos].disabled;
+    
+    if (!wasDisabled) {
+        newNode.indegree = newNode.outdegree = 1;
+    }
+    
     nodes.push_back(newNode);
     
-    Edge e1 = Edge(e.nodeFrom, nextNode);
-    Edge e2 = Edge(nextNode, e.nodeTo);
-        e1.disabled = e.disabled;
-        e2.disabled = e.disabled;
-    e.disabled = true;
+    DelayEdge e1 = DelayEdge(edges[ePos].nodeFrom, nextNode);
+    DelayEdge e2 = DelayEdge(nextNode, edges[ePos].nodeTo);
     
-    std::vector<MNEdge *> toReturn;
-
+    e1.disabled = edges[ePos].disabled;
+    e2.disabled = edges[ePos].disabled;
+    edges[ePos].disabled = true;
+    
     
     edges.push_back(e1);
+    DelayEdge *first = &edges.back();
+    
     edges.push_back(e2);
+    DelayEdge *second = &edges.back();
     
-    Edge *first = new Edge(e1);
-    Edge *second = new Edge(e2);
-    
+    std::vector<MNEdge *> toReturn;
     
     toReturn.push_back(first);
     toReturn.push_back(second);
     return toReturn;
 }
 
-//std::vector<Edge>  RecurrentNN::insertNodeAsNode(int n)
-//{
-//    Node newNode = Node();
-//    Node oldNode = nodes[n];
-//    
-//    int newNodeNum = (int)nodes.size();
-//    
-//    Edge bridge = Edge(n, newNodeNum);
-//    
-//    std::vector<Edge> toReturn;
-//
-//    // gather the existing outputs from the old node
-//    std::vector<Edge> outputEdges = outputsFromNode(n);
-//    
-//    // add the bridge
-//    toReturn.push_back(bridge);
-//    edges.push_back(bridge);
-//    
-//    // now move the existing outputs to the new node
-//    for (long i=0; i<outputEdges.size(); i++) {
-//        std::vector<Edge>::iterator it = std::find(edges.begin(), edges.end(), outputEdges[i]);
-//        it->nodeFrom = newNodeNum;
-//        toReturn.push_back(*it);
-//    }
-//    
-//    newNode.outdegree = oldNode.outdegree;
-//    oldNode.outdegree = 1;
-//    
-//    nodes.push_back(newNode);
-//    
-//    return toReturn;
-//}
-
-Edge *RecurrentNN::createConnection()
+std::vector<std::vector<double> > RecurrentNN::simulateSequence(const std::vector<std::vector<double> > &inputValues, int delay)
 {
+    // ensure that we have the right number of input values
+    long nNodes = nodes.size();
+    
+    std::vector<std::vector<double> > allOuputs;
+    
+    for (long i=0; i<inputValues.size(); i++) {
+        std::vector<double> currentOutputs = std::vector<double>(nNodes);
+        std::vector<double> currentInputs = inputValues[i];
+        for (long steps = -1; steps<delay; steps++) {
+            std::vector<double> lastOutputs = currentOutputs;
+            currentOutputs = nodeOutputsForInputs(currentInputs, currentOutputs);
+            if (lastOutputs == currentOutputs) {
+                break;
+            }
+        }
+        
+        std::vector<double> finalOutputs;
+        for (std::set<long>::iterator it = outputNodes.begin(); it != outputNodes.end(); it++) {
+            long node = *it;
+            finalOutputs.push_back(currentOutputs[node]);
+        }
+        allOuputs.push_back(finalOutputs);
+    }
+    
+    return allOuputs;
+}
 
+
+
+DelayEdge *RecurrentNN::createConnection()
+{
+    cycleSort();
     // pick two existing, unconnected nodes and connect them - can connect self to self!
-    long maxConnections = nodes.size()*nodes.size();
-
-    long activeEdges = std::count_if(edges.begin(), edges.end(), [](Edge e) {return !e.disabled;});
+    long maxConnections = nodes.size()* nodes.size();
     
-    Edge newEdge = Edge(-1,-1);
+    long activeEdges = std::count_if(edges.begin(), edges.end(), [](DelayEdge e) {return !e.disabled;});
     
-    std::vector<Edge>::iterator edgePos = edges.end();
+    DelayEdge newEdge = DelayEdge(-1,-1);
+    
+    std::vector<DelayEdge>::iterator edgePos = edges.end();
     
     if (activeEdges < maxConnections) {
         // chose a source node at random
         long maxDegree = nodes.size();
-        Node source;
+        Node *source = NULL;
         uint pos;
         do {
             pos = arc4random_uniform((uint)nodes.size());
-            source = nodes.at(pos);
-        } while (source.outdegree >= maxDegree);
+            source = &nodes.at(pos);
+        } while (!source || source->outdegree >= maxDegree);
         newEdge.nodeFrom = pos;
         nodes.at(pos).outdegree++;
-       
+        
         // choose one it's not connected to yet -
         // reduce the search space
-        std::vector<Edge> existingEdges;
+        std::vector<DelayEdge> existingEdges;
         
-        std::vector<Edge>::iterator it = edges.begin();
+        std::vector<DelayEdge>::iterator it = edges.begin();
         while (it != edges.end()) {
             if (it->nodeFrom == newEdge.nodeFrom)
                 existingEdges.push_back(*it);
             it++;
         }
         
-        Node sink;
+        Node *sink = NULL;
         bool found = false;
-        
         
         do {
             pos = arc4random_uniform((uint)nodes.size());
-         
-            sink = nodes.at(pos);
+            
+            sink = &nodes.at(pos);
             newEdge.nodeTo = pos;
             edgePos = std::find(existingEdges.begin(), existingEdges.end(), newEdge);
             
             found = (edgePos != existingEdges.end() && !edgePos->disabled); // already enabled edge?
             
             
-        } while (sink.indegree >= maxDegree || found);
+        } while (!sink || sink->indegree >= maxDegree || found);
         nodes.at(pos).indegree++;
-
+        
         if (edgePos != existingEdges.end() && edgePos->disabled) {
+            edgePos = std::find(edges.begin(), edges.end(), newEdge);
             edgePos->disabled = false;
         } else {
             edges.push_back(newEdge);
             edgePos = edges.end()-1;
         }
+        return &(*edgePos);
+    } else {
+        return NULL;
     }
-    return new Edge(*edgePos);
-    //Edge& toReturn = *edgePos;
-    //return &(toReturn);
 }
 
 double RecurrentNN::connectionDifference(MNEdge *e1, MNEdge *e2)
 {
     
-    Edge *first = dynamic_cast<Edge *>(e1);
-    Edge *second = dynamic_cast<Edge *>(e2);
+    DelayEdge *first = dynamic_cast<DelayEdge *>(e1);
+    DelayEdge *second = dynamic_cast<DelayEdge *>(e2);
     
     if (!first || !second)
         return INFINITY;
@@ -296,26 +306,15 @@ double RecurrentNN::nodeDifference(MNIndividual *ind)
     if (!other)
         return INFINITY;
     
-
+    
     
     long length = std::max(other->nodes.size(), nodes.size());
     double d = 0;
     for (long i=0; i<length; i++) {
-//        ActivationFunc t1 = other->nodes[i].type;
-//        ActivationFunc t2 = nodes[i].type;
-//        if (t1 > t2)
-//            std::swap(t1, t2);
-//        if (t1 != t2) {
-//            if ((t1 == TANH_FUNC && t2 == STEP_FUNC) || (t1 == GAUSSIAN_FUNC && t2 == SIN_FUNC))
-//                d += 1;
-//            else
-//                d += 2;
-//        }
-//        d+= (nodes[i].bias - other->nodes[i].bias);
-//        d+= (nodes[i].param1 - other->nodes[i].param1);
+        
         double d11 = 0;
         double d21 = 0;
-
+        
         double d12 = 0;
         double d22 = 0;
         
@@ -344,42 +343,11 @@ long RecurrentNN::numberOfEdges()
 }
 
 
-
-std::vector<std::vector<double> > RecurrentNN::simulateSequence(const std::vector<std::vector<double> > &inputValues, int delay)
-{
-    cleanup();
-    // ensure that we have the right number of input values
-    long nNodes = nodes.size();
-    
-    std::vector<std::vector<double> > allOuputs;
-    
-    for (long i=0; i<inputValues.size(); i++) {
-        std::vector<double> currentOutputs = std::vector<double>(nNodes);
-        std::vector<double> currentInputs = inputValues[i];
-        for (long steps = -1; steps<delay; steps++) {
-            std::vector<double> lastOutputs = currentOutputs;
-            currentOutputs = nodeOutputsForInputs(currentInputs, currentOutputs);
-            if (lastOutputs == currentOutputs) {
-                break;
-            }
-        }
-        
-        std::vector<double> finalOutputs;
-        for (std::set<long>::iterator it = outputNodes.begin(); it != outputNodes.end(); it++) {
-            long node = *it;
-            finalOutputs.push_back(currentOutputs[node]);
-        }
-        allOuputs.push_back(finalOutputs);
-    }
-    
-    return allOuputs;
-}
-
 double RecurrentNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs)
 {
     Node n = nodes[i];
     visitedNodes.insert(i);
-    std::vector<Edge> inputEdges = inputsToNode(i);
+    std::vector<DelayEdge> inputEdges = inputsToNode(i);
     
     double inputSum = n.bias;
     
@@ -397,7 +365,7 @@ double RecurrentNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<
     return inputSum;
 }
 
- std::vector<double> RecurrentNN::nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs)
+std::vector<double> RecurrentNN::nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs)
 {
     std::vector<double> newOutputs;
     
@@ -423,28 +391,28 @@ double RecurrentNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<
 
 
 
-std::vector<Edge> RecurrentNN::inputsToNode(long n)
+std::vector<DelayEdge> RecurrentNN::inputsToNode(long n)
 {
     
-    std::vector<Edge> found;
+    std::vector<DelayEdge> found;
     
     has_input pred = has_input(n);
     
-    std::vector<Edge>::iterator it = std::find_if(edges.begin(), edges.end(), pred);
+    std::vector<DelayEdge>::iterator it = std::find_if(edges.begin(), edges.end(), pred);
     for (; it != edges.end(); it = std::find_if(++it, edges.end(), pred)) {
         found.push_back(*it);
     }
     return found;
 }
 
-std::vector<Edge> RecurrentNN::outputsFromNode(long n)
+std::vector<DelayEdge> RecurrentNN::outputsFromNode(long n)
 {
     
-    std::vector<Edge> found;
+    std::vector<DelayEdge> found;
     
     has_output pred = has_output(n);
     
-    std::vector<Edge>::iterator it = std::find_if(edges.begin(), edges.end(), pred);
+    std::vector<DelayEdge>::iterator it = std::find_if(edges.begin(), edges.end(), pred);
     for (; it != edges.end(); it = std::find_if(++it, edges.end(), pred)) {
         found.push_back(*it);
     }
@@ -458,7 +426,7 @@ std::string RecurrentNN::display()
     std::ostringstream ss;
     std::sort(edges.begin(), edges.end());
     
-    std::vector<Edge>::iterator it = edges.begin();
+    std::vector<DelayEdge>::iterator it = edges.begin();
     for (; it != edges.end(); it++) {
         ss << it->nodeFrom << " -> " << it->nodeTo << ": " << it->weight;
         if (it->disabled)
@@ -470,7 +438,7 @@ std::string RecurrentNN::display()
     for (int i=0; i<nodes.size(); i++) {
         Node n = nodes[i];
         ss << i << ": " << activationFuncName(n.type);
-            ss << " P: " << n.param1;
+        ss << " P: " << n.param1;
         ss << " B: " << n.bias << "\n";
     }
     
@@ -480,7 +448,7 @@ std::string RecurrentNN::display()
 std::string RecurrentNN::dotFormat(std::string graphName)
 {
     std::ostringstream ss;
-
+    
     ss << "digraph " << graphName << "{\n" ;
     ss << "size=\"7.75,10.75\";\n";
     ss << "\trankdir=LR;\n";
@@ -521,7 +489,7 @@ std::string RecurrentNN::dotFormat(std::string graphName)
     }
     
     for (long j=0; j<edges.size(); j++) {
-        Edge e = edges[j];
+        DelayEdge e = edges[j];
         ss << "\t" << e.nodeFrom << " -> " << e.nodeTo << " [label =\"" << e.weight << "\"";
         if (e.disabled) {
             ss << ", style=dotted";
@@ -535,30 +503,117 @@ std::string RecurrentNN::dotFormat(std::string graphName)
     return ss.str();
 }
 
-void RecurrentNN::cleanup()
+// helper struct and function for cycleSort
+struct RecurrentNN::CycleNode {
+    long index;
+    long lowlink;
+    long node;
+    CycleNode(long n, long i=-1, long l=INFINITY)
+     :node(n), index(i),lowlink(l){}
+};
+
+void RecurrentNN::strongConnect(long v, long index, std::vector<long> &stack,  std::vector<RecurrentNN::CycleNode> &nodes,  std::vector<std::vector<long> > &components)
 {
-    bool done;
-    do {
-        done = true;
-        std::set<long> disabledNodes;
-        for (int i=0; i< nodes.size(); i++) {
-            Node &n = nodes[i];
-            // if our indegree is 0, disable our inputs
-            if (inputNodes.count(i) == 0 && n.indegree == 0 && n.outdegree > 0) {
-                disabledNodes.insert(i);
-            }
+    std::vector<long> connectedComponent;
+    
+    CycleNode &cn = nodes[v];
+    cn.index = index;
+    cn.lowlink = index;
+    index = index+1;
+    stack.push_back(v);
+    
+    std::vector<DelayEdge> succesors = outputsFromNode(v);
+    for (long i=0; i<succesors.size(); i++) {
+        long toNode = succesors[i].nodeTo;
+        CycleNode &nextN = nodes[toNode];
+        if (nextN.index < 0) {
+            strongConnect(toNode, index, stack, nodes, components);
+            cn.lowlink = std::min(nextN.lowlink, cn.lowlink);
+        } else if (std::find(stack.begin(), stack.end(), toNode) != stack.end()) {
+            // Successor w is in stack S and hence in the current SCC
+            cn.lowlink = std::min(nextN.index, cn.lowlink);
         }
-        if (!done) {
-            for (std::vector<Edge>::iterator it = edges.begin(); it != edges.end(); it++) {
-                if (disabledNodes.count(it->nodeFrom) > 0) {
-                    if (!it->disabled) {
-                        done=false;
-                        it->disabled = true;
-                        nodes[it->nodeTo].indegree--;
-                        nodes[it->nodeFrom].outdegree--;
-                    }
-                }
-            }
-        }
-    }  while (!done);
+    }
+    
+    if (cn.lowlink == cn.index) {
+        long nodeFrom = v;
+        long nodeTo = -1;
+        do {
+            nodeTo = stack.back();
+            stack.pop_back();
+            connectedComponent.push_back(nodeTo);
+        } while (nodeFrom != nodeTo);
+        components.push_back(connectedComponent);
+    }
 }
+
+//http://en.wikipedia.org/wiki/Tarjan’s_strongly_connected_components_algorithm
+std::vector<std::vector<long> > RecurrentNN::cycleSort()
+{
+    std::vector<std::vector<long> > sorted;
+    std::vector<long> stack;
+    
+    std::vector<RecurrentNN::CycleNode> cycleNodes;
+
+    long index = 0;
+    // make a CycleNode for each actual node
+    for (long i=0; i<nodes.size(); i++) {
+        CycleNode cn = CycleNode(i);
+        cycleNodes.push_back(cn);
+    }
+    
+    for (long i=0; i<cycleNodes.size(); i++) {
+        if (cycleNodes[i].index < 0) {
+            strongConnect(i, index, stack, cycleNodes, sorted);
+        }
+    }
+    
+    
+    return sorted;
+}
+
+//void RecurrentNN::cleanup()
+//{
+//    // in, out
+//    std::vector<std::pair<int, int> > nodeDegrees(nodes.size());
+//    for (long i=0; i< edges.size(); i++) {
+//        if (!edges[i].disabled) {
+//            nodeDegrees[edges[i].nodeFrom].second++;
+//            nodeDegrees[edges[i].nodeTo].first++;
+//        }
+//    }
+//    
+//    for (long i=0; i<nodes.size(); i++) {
+//        assert(nodes[i].indegree == nodeDegrees[i].first);
+//        assert(nodes[i].outdegree == nodeDegrees[i].second);
+//    }
+//    
+//}
+
+//void RecurrentNN::cleanup()
+//{
+//    bool done;
+//    do {
+//       done = true;
+//        std::set<long> disabledNodes;
+//        for (int i=0; i< nodes.size(); i++) {
+//            Node &n = nodes[i];
+//            // if our indegree is 0, disable our inputs
+//            if (inputNodes.count(i) == 0 && n.indegree == 0 && n.outdegree > 0) {
+//                disabledNodes.insert(i);
+//            }
+//        }
+//        if (!done) {
+//            for (std::vector<Edge>::iterator it = edges.begin(); it != edges.end(); it++) {
+//                if (disabledNodes.count(it->nodeFrom) > 0) {
+//                    if (!it->disabled) {
+//                       done=false;
+//                        it->disabled = true;
+//                       nodes[it->nodeTo].indegree--;
+//                        nodes[it->nodeFrom].outdegree--;
+//                    }
+//                }
+//            }
+//        }
+//    }  while (!done);
+//}

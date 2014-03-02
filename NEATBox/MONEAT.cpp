@@ -19,15 +19,17 @@
 #include "NBUtils.h"
 
 #define RESTRICT_SPECIES 0
-#define ROULETTE_SELECT 1
 #define INTERSPECIES 0
+
+#define ROULETTE_SELECT 1
+#define ELITISM 0
 
 #define TIGHT_CLUSTERS 0
 #define FINE_RANK 0
 
 
-MONEAT::MONEAT(int populationSize, int maxGenerations)
-:BaseNEAT(populationSize, maxGenerations), nextSpeciesNumber(1),
+MONEAT::MONEAT(int populationSize)
+:BaseNEAT(populationSize), nextSpeciesNumber(1),
 stagnantGenerations(0)
 {
 }
@@ -90,7 +92,7 @@ static bool distanceCompare(const std::pair<NEATExtendedSpecies *, double> &p1, 
     return p1.second < p2.second;
 }
 
-
+#if RESTRICT_SPECIES
 void MONEAT::spawnNextGeneration()
 {
  
@@ -213,6 +215,86 @@ void MONEAT::spawnNextGeneration()
     population = newGeneration;
     
 }
+#else
+
+void MONEAT::spawnNextGeneration()
+{
+    // create population children through recombination
+    std::vector<SystemInfo *>newGeneration;
+    
+    SystemInfo *p1;
+    SystemInfo *p2;
+    
+    MNIndividual *child;
+    
+#if ELITISM
+   // copy best individuals to this generation
+    for (int i=0; i<bestIndividuals.size(); i++) {
+        SystemInfo *copy = new SystemInfo(*bestIndividuals[i]);
+        newGeneration.push_back(copy);
+    }
+#endif
+        while (newGeneration.size() < populationSize) {
+            
+#if ROULETTE_SELECT
+            //stochastic acceptance
+            bool accepted = false;
+            while (!accepted) {
+                p1 = population[uniformlyDistributed(population.size())];
+                accepted = (uniformProbability() < 1.0/(p1->rankFitness));
+            }
+            
+            
+            accepted = false;
+            while (!accepted) {
+                p2 = population[uniformlyDistributed(population.size())];
+                accepted = (uniformProbability() < 1.0/(p2->rankFitness));
+            }
+            
+#else
+            const int tournamentSize = 3;
+            
+            
+            // tournament
+            p1 = (population[uniformlyDistributed(population.size())]);
+            p2 = (population[uniformlyDistributed(population.size())]);
+            
+            
+                for (int i=0; i<tournamentSize; i++) {
+                    SystemInfo *contender = population[uniformlyDistributed(population.size())];
+                    if (contender->rankFitness > p1->rankFitness)
+                        p1 = contender;
+                }
+                
+                for (int i=0; i<tournamentSize; i++) {
+                    SystemInfo *contender = population[uniformlyDistributed(population.size())];
+                    if (contender->rankFitness > p2->rankFitness)
+                        p2 = contender;
+                }
+            
+#endif
+            child = combineSystems(p1, p2);
+            // mutate the new individual (maybe)
+            mutateSystem(child);
+            
+            SystemInfo *i = new SystemInfo(child);
+            newGeneration.push_back(i);
+        }
+    
+    // clear out the old pop and replace with new generation
+    for (std::vector<SystemInfo *>::iterator popIter = population.begin(); popIter != population.end(); popIter++) {
+        delete *popIter;
+    }
+    
+    population = newGeneration;
+    
+}
+
+#endif
+
+
+
+
 
 NEATExtendedSpecies *MONEAT::chooseCompatibleSpecies(NEATExtendedSpecies *species, double maxDistance){
     NEATExtendedSpecies *chosen = speciesList[uniformlyDistributed(speciesList.size())];
@@ -470,13 +552,13 @@ void MONEAT::rankSystems()
 }
 
 
-bool MONEAT::tick()
+void MONEAT::tick()
 {
     bool first_run = false;
     if (population.size() == 0) {
         prepareInitialPopulation();
-        
-        first_run = true;
+    } else {
+        spawnNextGeneration();
     }
     
     typename std::vector<SystemInfo *>::iterator popIter;
@@ -493,19 +575,29 @@ bool MONEAT::tick()
     
     rankSystems();
     
-    bool last_run =  (generations >= maxGenerations) ;
     
     
-    {
+#if RESTRICT_SPECIES
+    bool respeciate = first_run;
+    if (!respeciate) {
+        respeciate = (generations % 25 == 0);
+    }
+#else
+    bool respeciate = true;
+#endif
+
+    if (respeciate) {
+        
         // clear species membership lists
         std::vector<NEATExtendedSpecies *>::iterator speciesIterator = speciesList.begin();
         while (speciesIterator != speciesList.end()) {
             (*speciesIterator)->members.clear();
             speciesIterator++;
         }
+        
+        speciate();
     }
-    
-    speciate();
+
     
     updateSharedFitnesses();
     
@@ -595,11 +687,10 @@ bool MONEAT::tick()
 
     generations++;
 
-    if (!last_run) {
-        spawnNextGeneration();
-    }
     
-    return  last_run;
+if (verbose)
+    std::cout << "\n";
+    
 }
 
 

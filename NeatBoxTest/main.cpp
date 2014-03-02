@@ -15,12 +15,11 @@ int main(int argc, const char * argv[])
 {
  //   std::cout << "--- NSGA-II ---\n";
 //    for (int i=0; i<10; i++) {
-    MONEAT *m = new MONEAT(150,200);
- //   SPaNEAT *m = new SPaNEAT(100,100, 15);
-        m->verbose = true;
-        runXorExample(m);
-        delete m;
-        
+   // MONEAT *m = new MONEAT(100);
+//        m->verbose = true;
+//        runXorExample(m);
+//        delete m;
+//        
   //  }
 //    
 //    std::cout << "--- SPEA2 ---\n";
@@ -32,6 +31,11 @@ int main(int argc, const char * argv[])
 //        delete s;
 //        
 //    }
+    
+    MONEAT *m = new MONEAT(50);
+    m->verbose = true;
+    runSequenceTest(m);
+    delete m;
     
     return 0;
 }

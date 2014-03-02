@@ -19,8 +19,8 @@
 
 #define SEPARATE_ARCHIVE 1
 
-SPaNEAT::SPaNEAT(long populationSize, long maxGenerations, long archiveSize)
-:BaseNEAT(populationSize, maxGenerations),
+SPaNEAT::SPaNEAT(long populationSize, long archiveSize)
+:BaseNEAT(populationSize),
 archiveSize(archiveSize)
 {}
 
@@ -209,12 +209,12 @@ void SPaNEAT::rankSystems()
     }
 }
 
-bool SPaNEAT::tick()
+void SPaNEAT::tick()
 {
-    bool first_run = false;
     if (population.size() == 0) {
         prepareInitialPopulation();
-        first_run = true;
+    } else {
+        spawnNextGeneration();
     }
     
     std::vector<SPSystemInfo *>::iterator sysIter;
@@ -230,8 +230,6 @@ bool SPaNEAT::tick()
     }
     
     rankSystems();
-    
-    bool last_run = (generations >= maxGenerations) ;
     
     std::vector<SPSystemInfo *> newArchive;
     
@@ -293,12 +291,6 @@ bool SPaNEAT::tick()
 #endif
     
     archive = newArchive;
-    
-    if (!last_run) {
-        spawnNextGeneration();
-    }
-    
-    return  last_run;
 }
 
 std::vector<SystemInfo *> SPaNEAT::optimalSolutions()

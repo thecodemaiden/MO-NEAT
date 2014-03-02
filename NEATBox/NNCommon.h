@@ -10,30 +10,34 @@
 #define NEATBox_NNCommon_h
 
 #include <string>
+#include <vector>
 #include "MNEdge.h"
 #include "NBUtils.h"
 #include "assert.h"
 
 enum ActivationFunc {
+
+    SIN_FUNC,
+
+  FUNC_SENTINEL,
     GAUSSIAN_FUNC,
     TANH_FUNC,
-    FUNC_SENTINEL,
     STEP_FUNC,
-    SIN_FUNC,
+    LIN_FUNC,
 };
 
 std::string activationFuncName(ActivationFunc f);
 
 struct Edge : public MNEdge {
-    int nodeFrom;
-    int nodeTo;
+    long nodeFrom;
+    long nodeTo;
     
     double weight;
     
     bool disabled;  // for NEAT
     
     
-    Edge(int from, int to)
+    Edge(long from, long to)
     :nodeFrom(from), nodeTo(to),disabled(false), weight(1.0)
     {
     
@@ -92,5 +96,26 @@ struct Node {
 
 double applyActivationFunc(Node n, double inputSum);
 
+// Directed acyclic graph - no cycles
+class DAGNN
+{
+public:
+    DAGNN(){}
+    virtual ~DAGNN(){}
+    // simulate the network for evaluation
+    virtual std::vector<double> simulateSequence(const std::vector<double> &inputValues) = 0;
+};
+
+// allows cycles, should have delayed edges
+// allow time-dependent inputs
+class CycledNN
+{
+public:
+    CycledNN(){}
+    virtual ~CycledNN(){}
+    // we generate recurrent networks that may wish to simulate a sequence
+    virtual std::vector<std::vector<double> > simulateSequence(const std::vector<std::vector<double> > &inputValues, int delay) = 0;
+
+};
 
 #endif

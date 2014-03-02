@@ -69,6 +69,8 @@ double xorEvaluation(MNIndividual *i)
     if (!individual)
         return -INFINITY;
     
+    static double bestFitness = INFINITY;
+    
     const int nCases = 4;
  
     std::vector<std::array<double, 2> > inVals;
@@ -94,6 +96,12 @@ double xorEvaluation(MNIndividual *i)
     }
         
     double finalScore = diff;
+    
+    if (finalScore < bestFitness) {
+        bestFitness = finalScore;
+        std::cout << "BEST: " << bestFitness <<"\n";
+    }
+    
     
     return finalScore;
 }

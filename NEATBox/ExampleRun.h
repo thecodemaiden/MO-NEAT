@@ -12,12 +12,12 @@
 #include <iostream>
 #include <NEATBox/BaseNeat.h>
 
-void runXorExample(BaseNEAT *algo);
-void runParityExample(BaseNEAT *algo);
+void runXorExample(BaseNEAT *algo, long maxGenerations=100);
+void runParityExample(BaseNEAT *algo, long maxGenerations=100);
 
-void runMult23SOTestTrain(BaseNEAT *algo);
+void runMult23SOTestTrain(BaseNEAT *algo, long maxGenerations=100);
 
-void runMult23MOTestTrain(BaseNEAT *algo);
+void runMult23MOTestTrain(BaseNEAT *algo, long maxGenerations=100);
 
-void runSequenceTest(BaseNEAT *algo);
+void runSequenceTest(BaseNEAT *algo, long maxGenerations=100);
 #endif /* defined(__NEATBox__ExampleRun__) */

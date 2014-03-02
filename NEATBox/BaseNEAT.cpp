@@ -11,9 +11,9 @@
 
 #define USE_NODE_DIFF 1
 
-BaseNEAT::BaseNEAT(long populationSize, long maxGenerations)
-:populationSize(populationSize), maxGenerations(maxGenerations),
-nextInnovationNumber(1), generations(0), origin(NULL)
+BaseNEAT::BaseNEAT(long populationSize)
+:populationSize(populationSize), nextInnovationNumber(1),
+generations(0), origin(NULL)
 {
 }
 
@@ -30,17 +30,6 @@ void BaseNEAT::mutateSystem(MNIndividual  *original)
     original->mutateNodes(p_m_node);
     
     // add attachment or add node - or both
-    double selector1 = (double )rand()/RAND_MAX;
-    if (selector1 < p_m_conn_ins) {
-        // insert a new connection
-        // update the innovation number
-        MNEdge *created = original->createConnection();
-        InnovationInfo *newInfo = new InnovationInfo(created, true);
-        assignInnovationNumberToGene(newInfo);
-        delete newInfo;
-        delete created;
-    }
-    
     double selector2 = (double )rand()/RAND_MAX;
     if (selector2 < p_m_node_ins) {
         // add a node somewhere if possible
@@ -49,7 +38,19 @@ void BaseNEAT::mutateSystem(MNIndividual  *original)
             InnovationInfo *newInfo = new InnovationInfo(new_edges[i], true);
             assignInnovationNumberToGene(newInfo);
             delete newInfo;
-            delete new_edges[i];
+        }
+    }
+    
+    
+    double selector1 = (double )rand()/RAND_MAX;
+    if (selector1 < p_m_conn_ins) {
+        // insert a new connection
+        // update the innovation number
+        MNEdge *created = original->createConnection();
+        if (created) {
+            InnovationInfo *newInfo = new InnovationInfo(created, true);
+            assignInnovationNumberToGene(newInfo);
+            delete newInfo;
         }
     }
 }
