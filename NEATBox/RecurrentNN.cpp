@@ -200,12 +200,14 @@ std::vector<std::vector<double> > RecurrentNN::simulateSequence(const std::vecto
     
     std::vector<std::vector<double> > allOuputs;
     
+    std::vector<std::vector<double> > memory;
+    
     for (long i=0; i<inputValues.size(); i++) {
         std::vector<double> currentOutputs = std::vector<double>(nNodes);
         std::vector<double> currentInputs = inputValues[i];
         for (long steps = -1; steps<delay; steps++) {
             std::vector<double> lastOutputs = currentOutputs;
-            currentOutputs = nodeOutputsForInputs(currentInputs, currentOutputs);
+            currentOutputs = nodeOutputsForInputs(currentInputs, currentOutputs, memory);
             if (lastOutputs == currentOutputs) {
                 break;
             }
@@ -223,10 +225,8 @@ std::vector<std::vector<double> > RecurrentNN::simulateSequence(const std::vecto
 }
 
 
-
 DelayEdge *RecurrentNN::createConnection()
 {
-    cycleSort();
     // pick two existing, unconnected nodes and connect them - can connect self to self!
     long maxConnections = nodes.size()* nodes.size();
     
@@ -235,6 +235,8 @@ DelayEdge *RecurrentNN::createConnection()
     DelayEdge newEdge = DelayEdge(-1,-1);
     
     std::vector<DelayEdge>::iterator edgePos = edges.end();
+    
+    DelayEdge *toReturn = NULL;
     
     if (activeEdges < maxConnections) {
         // chose a source node at random
@@ -282,10 +284,64 @@ DelayEdge *RecurrentNN::createConnection()
             edges.push_back(newEdge);
             edgePos = edges.end()-1;
         }
-        return &(*edgePos);
-    } else {
-        return NULL;
+        toReturn = &(*edgePos);
+        
+        // if this created a cycle with no delay, put a delay onto this edge
+        std::vector<std::vector<long> > cycles = cycleSort();
+        
+        // determines if the edge is in a cycle with no delays
+        std::vector<long> cycle;
+        for (int i=0; i<cycles.size(); i++) {
+            std::vector<long>::const_iterator nodeFromPos;
+            std::vector<long>::const_iterator nodeToPos;
+            
+            nodeFromPos = std::find(cycles[i].begin(), cycles[i].end(), edgePos->nodeTo);
+            nodeToPos = std::find(cycles[i].begin(), cycles[i].end(), edgePos->nodeFrom);
+            
+            if (nodeFromPos != cycles[i].end() && nodeToPos != cycles[i].end()) {
+                cycle = cycles[i];
+                break;
+            }
+        }
+        
+        
+        bool tightCycle = false;
+        if (cycle.size() > 1) {
+            std::sort(cycle.begin(), cycle.end());
+            tightCycle = true;
+            // check that at least one edge in the cycle has delay >= 1
+            std::vector<DelayEdge>::iterator it = edges.begin();
+            do {
+                it = std::find_if(it, edges.end(), [cycle](const DelayEdge &e){
+                    bool fromPresent = std::binary_search(cycle.begin(), cycle.end(), e.nodeFrom);
+                    bool toPresent = std::binary_search(cycle.begin(), cycle.end(), e.nodeTo);
+                    if (fromPresent && toPresent) {
+                        // this is an edge cycle
+                        return true;
+                    }
+                    return false;
+                });
+                if (it != edges.end()) {
+                    if (it->delay > 0) {
+                        tightCycle = false;
+                        // we only need one delayed edge
+                        break;
+                    }
+                    ++it;
+                } else {
+                    break;
+                }
+            } while (1);
+        }
+        
+        if (tightCycle) {
+            toReturn->delay = 1;
+        }
     }
+    
+    
+    
+    return toReturn;
 }
 
 double RecurrentNN::connectionDifference(MNEdge *e1, MNEdge *e2)
@@ -365,7 +421,7 @@ double RecurrentNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<
     return inputSum;
 }
 
-std::vector<double> RecurrentNN::nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs)
+std::vector<double> RecurrentNN::nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs, std::vector<std::vector<double> > &memory)
 {
     std::vector<double> newOutputs;
     
@@ -490,11 +546,13 @@ std::string RecurrentNN::dotFormat(std::string graphName)
     
     for (long j=0; j<edges.size(); j++) {
         DelayEdge e = edges[j];
-        ss << "\t" << e.nodeFrom << " -> " << e.nodeTo << " [label =\"" << e.weight << "\"";
+        ss << "\t" << e.nodeFrom << " -> " << e.nodeTo << " [label =\"" << e.weight;
         if (e.disabled) {
             ss << ", style=dotted";
+        } else {
+            ss <<  "\n" << e.delay;
         }
-        ss << "];\n";
+        ss << "\"];\n";
     }
     
     ss <<"}\n";

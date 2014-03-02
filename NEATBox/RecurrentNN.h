@@ -90,7 +90,7 @@ private:
 
 
     // helpers for simulation
-    std::vector<double> nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs);
+    std::vector<double> nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs, std::vector<std::vector<double> > &memory);
     std::vector<DelayEdge> inputsToNode(long n);
     std::vector<DelayEdge> outputsFromNode(long n);
     double visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs);
