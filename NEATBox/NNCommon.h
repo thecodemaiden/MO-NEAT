@@ -114,7 +114,7 @@ public:
     CycledNN(){}
     virtual ~CycledNN(){}
     // we generate recurrent networks that may wish to simulate a sequence
-    virtual std::vector<std::vector<double> > simulateSequence(const std::vector<std::vector<double> > &inputValues, int delay) = 0;
+    virtual std::vector<std::vector<double> > simulateSequence(const std::vector<std::vector<double> > &inputValues) = 0;
 
 };
 

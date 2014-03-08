@@ -11,6 +11,8 @@
 #include <sstream>
 #include <cmath>
 #include <assert.h>
+#include <deque>
+#include <set>
 
 // locate incoming and outgoing edges for a node number
 struct has_input {
@@ -30,7 +32,8 @@ private:
 // need a way to detect cycles so that delays can be enforced in cycles
 
 RecurrentNN::RecurrentNN(int nInputs, int nOutputs)
-:MNIndividual(), CycledNN()
+:MNIndividual(), CycledNN(),
+maxDelay(0)
 {
     for (int i=0; i<nInputs; i++) {
         nodes.push_back(Node());
@@ -71,7 +74,6 @@ void RecurrentNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
     bool didDisable = false;
     bool wasDisabled = false;
     
-    
     if (found != edges.end()) {
         found->weight = gene->weight;
         wasDisabled = found->disabled;
@@ -79,9 +81,12 @@ void RecurrentNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
             return; // nothing more to do, don't modify in/outdegrees
         found->disabled = gene->disabled;
         didDisable = gene->disabled;
+        if (found->nodeFrom == found->nodeTo)
+            assert(found->delay > 0);
     } else {
         wasDisabled = true;
         edges.push_back(*gene);
+        found = edges.end()-1;
         
         while (gene->nodeFrom >= nodes.size() || gene->nodeTo >= nodes.size()) {
             // add nodes up to the required number, copying from the parent
@@ -100,6 +105,7 @@ void RecurrentNN::addGeneFromParentSystem(MNIndividual *p, MNEdge *g)
         nodes.at(gene->nodeFrom).outdegree--;
         nodes.at(gene->nodeTo).indegree--;
     }
+ //   fixCycles(*found);
 }
 
 std::vector<MNEdge *> RecurrentNN::connectionGenome()
@@ -179,6 +185,8 @@ std::vector<MNEdge *> RecurrentNN::insertNodeOnEdge(long ePos)
     e2.disabled = edges[ePos].disabled;
     edges[ePos].disabled = true;
     
+    // put the delay on the first edge
+    e1.delay = edges[ePos].delay;
     
     edges.push_back(e1);
     DelayEdge *first = &edges.back();
@@ -193,22 +201,25 @@ std::vector<MNEdge *> RecurrentNN::insertNodeOnEdge(long ePos)
     return toReturn;
 }
 
-std::vector<std::vector<double> > RecurrentNN::simulateSequence(const std::vector<std::vector<double> > &inputValues, int delay)
+std::vector<std::vector<double> > RecurrentNN::simulateSequence(const std::vector<std::vector<double> > &inputValues)
 {
+    fixCycles(edges.front());
+    
     // ensure that we have the right number of input values
     long nNodes = nodes.size();
     
     std::vector<std::vector<double> > allOuputs;
     
-    std::vector<std::vector<double> > memory;
+    std::vector<std::vector<double> > memory(nNodes);
     
     for (long i=0; i<inputValues.size(); i++) {
         std::vector<double> currentOutputs = std::vector<double>(nNodes);
         std::vector<double> currentInputs = inputValues[i];
-        for (long steps = -1; steps<delay; steps++) {
+        for (long steps = -1; steps<maxDelay; steps++) {
             std::vector<double> lastOutputs = currentOutputs;
-            currentOutputs = nodeOutputsForInputs(currentInputs, currentOutputs, memory);
+            currentOutputs = nodeOutputsForInputs(currentInputs, memory);
             if (lastOutputs == currentOutputs) {
+                // settled
                 break;
             }
         }
@@ -223,6 +234,95 @@ std::vector<std::vector<double> > RecurrentNN::simulateSequence(const std::vecto
     
     return allOuputs;
 }
+
+
+
+std::vector<double> RecurrentNN::nodeOutputsForInputs(std::vector<double> inputs, std::vector<std::vector<double> > &memory)
+{
+    std::vector<double> newOutputs(nodes.size());
+    
+    std::deque<long> toVisitNodes;
+    for (int i=0; i<nodes.size(); i++)
+        toVisitNodes.push_back(i);
+    
+    std::set<long> resolvedNodes;
+    
+    int runs = 0;
+    
+    while (toVisitNodes.size() > 0) {
+        long n = toVisitNodes.front();
+        
+        std::vector<DelayEdge> inputEdges = inputsToNode(n);
+        double inputSum = nodes[n].bias;
+        bool tryAgain = false;
+        for (long j=0; j<inputEdges.size(); j++) {
+            DelayEdge &e = inputEdges[j];
+            long from = e.nodeFrom;
+            long delay = e.delay;
+            std::vector<double> history = memory[from];
+            
+            bool isSelfInspection = false;
+            if (from == n) {
+                // we're looking at ourselves
+                assert(delay > 0);
+                isSelfInspection = true;
+            }
+            
+            bool longEnoughHistory = (history.size() > delay);
+            
+            if (longEnoughHistory) {
+                if (std::count(resolvedNodes.begin(), resolvedNodes.end(), from) > 0 || delay > 0) {
+                    std::vector<double>::iterator valuePos = history.end() - (delay +1);
+                    assert(!isUnreasonable(*valuePos));
+                    inputSum += *valuePos;
+                } else {
+                    tryAgain = true;
+                    break;
+                }
+            }
+            
+//            if (std::count(resolvedNodes.begin(), resolvedNodes.end(), from) > 0 && longEnoughHistory) {
+//                // we've already resolved the output of this node
+//                // the values can be taken from memory
+//                std::vector<double>::iterator valuePos = history.end() - (delay+1);
+//                inputSum += *valuePos;
+//            } else {
+//                if (longEnoughHistory) {
+//                    // we should have an answer, but we don't - reschedule for later
+//                    tryAgain = true;
+//                    break;
+//                }
+//            }
+        }
+        
+        if (!tryAgain) {
+            // all input nodes resolved
+            resolvedNodes.insert(n);
+            
+            
+            bool isInput = (inputNodes.find(n) != inputNodes.end());
+            
+            if (isInput) {
+                inputSum += (inputs[n]); // the first [inputNodes.size()] nodes are the inputs
+            }
+            
+            double output = applyActivationFunc(nodes[n], inputSum);
+            assert(!isUnreasonable(output));
+            newOutputs[n] = output;
+            std::vector<double> &thisMemory = memory[n];
+            thisMemory.push_back(output);
+        } else {
+            // save this for later
+            toVisitNodes.push_back(n);
+        }
+        toVisitNodes.pop_front();
+        runs++;
+    }
+    
+    return newOutputs;
+}
+
+
 
 
 DelayEdge *RecurrentNN::createConnection()
@@ -286,60 +386,9 @@ DelayEdge *RecurrentNN::createConnection()
         }
         toReturn = &(*edgePos);
         
-        // if this created a cycle with no delay, put a delay onto this edge
-        std::vector<std::vector<long> > cycles = cycleSort();
-        
-        // determines if the edge is in a cycle with no delays
-        std::vector<long> cycle;
-        for (int i=0; i<cycles.size(); i++) {
-            std::vector<long>::const_iterator nodeFromPos;
-            std::vector<long>::const_iterator nodeToPos;
-            
-            nodeFromPos = std::find(cycles[i].begin(), cycles[i].end(), edgePos->nodeTo);
-            nodeToPos = std::find(cycles[i].begin(), cycles[i].end(), edgePos->nodeFrom);
-            
-            if (nodeFromPos != cycles[i].end() && nodeToPos != cycles[i].end()) {
-                cycle = cycles[i];
-                break;
-            }
-        }
-        
-        
-        bool tightCycle = false;
-        if (cycle.size() > 1) {
-            std::sort(cycle.begin(), cycle.end());
-            tightCycle = true;
-            // check that at least one edge in the cycle has delay >= 1
-            std::vector<DelayEdge>::iterator it = edges.begin();
-            do {
-                it = std::find_if(it, edges.end(), [cycle](const DelayEdge &e){
-                    bool fromPresent = std::binary_search(cycle.begin(), cycle.end(), e.nodeFrom);
-                    bool toPresent = std::binary_search(cycle.begin(), cycle.end(), e.nodeTo);
-                    if (fromPresent && toPresent) {
-                        // this is an edge cycle
-                        return true;
-                    }
-                    return false;
-                });
-                if (it != edges.end()) {
-                    if (it->delay > 0) {
-                        tightCycle = false;
-                        // we only need one delayed edge
-                        break;
-                    }
-                    ++it;
-                } else {
-                    break;
-                }
-            } while (1);
-        }
-        
-        if (tightCycle) {
-            toReturn->delay = 1;
-        }
     }
     
-    
+  //  fixCycles(*edgePos);
     
     return toReturn;
 }
@@ -399,80 +448,42 @@ long RecurrentNN::numberOfEdges()
 }
 
 
-double RecurrentNN::visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs)
+std::vector<DelayEdge> RecurrentNN::inputsToNode(long n, std::vector<DelayEdge> edgeSet)
 {
-    Node n = nodes[i];
-    visitedNodes.insert(i);
-    std::vector<DelayEdge> inputEdges = inputsToNode(i);
-    
-    double inputSum = n.bias;
-    
-    for (long j=0; j<inputEdges.size(); j++) {
-        long nodeN = inputEdges[j].nodeFrom;
-        if (visitedNodes.find(nodeN) == visitedNodes.end()) {
-            lastOutputs[nodeN] = visitNode(nodeN, visitedNodes, lastOutputs);
-        }
-        double rawVal = lastOutputs[nodeN];
-        
-        inputSum += inputEdges[j].weight*rawVal;
-        
-    }
-    
-    return inputSum;
-}
-
-std::vector<double> RecurrentNN::nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs, std::vector<std::vector<double> > &memory)
-{
-    std::vector<double> newOutputs;
-    
-    long inputNodeN = 0; // used to map values from the inputs vector to input nodes
-    std::set<long>visitedNodes;
-    for (long i=0; i<nodes.size(); i++) {
-        // collect the input values
-        double inputSum = visitNode(i, visitedNodes, lastOutputs);
-        
-        bool isInput = (inputNodes.find(i) != inputNodes.end());
-        
-        if (isInput) {
-            inputSum += (inputs[inputNodeN++]);
-        }
-        
-        double output = applyActivationFunc(nodes[i], inputSum);
-        assert(!isUnreasonable(output));
-        
-        newOutputs.push_back(output);
-    }
-    return newOutputs;
-}
-
-
-
-std::vector<DelayEdge> RecurrentNN::inputsToNode(long n)
-{
-    
-    std::vector<DelayEdge> found;
-    
-    has_input pred = has_input(n);
-    
-    std::vector<DelayEdge>::iterator it = std::find_if(edges.begin(), edges.end(), pred);
-    for (; it != edges.end(); it = std::find_if(++it, edges.end(), pred)) {
-        found.push_back(*it);
-    }
-    return found;
-}
-
-std::vector<DelayEdge> RecurrentNN::outputsFromNode(long n)
-{
-    
     std::vector<DelayEdge> found;
     
     has_output pred = has_output(n);
     
-    std::vector<DelayEdge>::iterator it = std::find_if(edges.begin(), edges.end(), pred);
-    for (; it != edges.end(); it = std::find_if(++it, edges.end(), pred)) {
+    std::vector<DelayEdge>::iterator it = std::find_if(edgeSet.begin(), edgeSet.end(), pred);
+    for (; it != edgeSet.end(); it = std::find_if(++it, edgeSet.end(), pred)) {
         found.push_back(*it);
     }
     return found;
+}
+
+std::vector<DelayEdge> RecurrentNN::outputsFromNode(long n, std::vector<DelayEdge> edgeSet)
+{
+    std::vector<DelayEdge> found;
+    
+    has_output pred = has_output(n);
+    
+    std::vector<DelayEdge>::iterator it = std::find_if(edgeSet.begin(), edgeSet.end(), pred);
+    for (; it != edgeSet.end(); it = std::find_if(++it, edgeSet.end(), pred)) {
+        found.push_back(*it);
+    }
+    return found;
+}
+
+
+std::vector<DelayEdge> RecurrentNN::inputsToNode(long n)
+{
+    return inputsToNode(n, edges);
+   
+}
+
+std::vector<DelayEdge> RecurrentNN::outputsFromNode(long n)
+{
+    return outputsFromNode(n, edges);
 }
 
 std::string RecurrentNN::display()
@@ -539,7 +550,7 @@ std::string RecurrentNN::dotFormat(std::string graphName)
         Node n = nodes[j];
         ss << "\t" << j << "[label = \"" << activationFuncName(nodes[j].type) << "\\n" << n.param1 << "\"];\n";
         if (n.bias != 0) {
-            ss << "\tb_" << j << " -> " << j << " [label = \"" << n.bias <<"\n" <<"\"];\n";
+            ss << "\tb_" << j << " -> " << j << " [label = \"" << n.bias <<"\\n" <<"\"];\n";
         }
         ss << "\n";
     }
@@ -548,11 +559,11 @@ std::string RecurrentNN::dotFormat(std::string graphName)
         DelayEdge e = edges[j];
         ss << "\t" << e.nodeFrom << " -> " << e.nodeTo << " [label =\"" << e.weight;
         if (e.disabled) {
-            ss << ", style=dotted";
+            ss << "\", style=dotted";
         } else {
-            ss <<  "\n" << e.delay;
+            ss <<  "\\n" << e.delay << "\"";
         }
-        ss << "\"];\n";
+        ss << "];\n";
     }
     
     ss <<"}\n";
@@ -630,48 +641,120 @@ std::vector<std::vector<long> > RecurrentNN::cycleSort()
     return sorted;
 }
 
-//void RecurrentNN::cleanup()
-//{
-//    // in, out
-//    std::vector<std::pair<int, int> > nodeDegrees(nodes.size());
-//    for (long i=0; i< edges.size(); i++) {
-//        if (!edges[i].disabled) {
-//            nodeDegrees[edges[i].nodeFrom].second++;
-//            nodeDegrees[edges[i].nodeTo].first++;
-//        }
-//    }
-//    
-//    for (long i=0; i<nodes.size(); i++) {
-//        assert(nodes[i].indegree == nodeDegrees[i].first);
-//        assert(nodes[i].outdegree == nodeDegrees[i].second);
-//    }
-//    
-//}
+// may make this part of RecurrentNN
+struct Path {
+    std::vector<long> nodes;
 
-//void RecurrentNN::cleanup()
-//{
-//    bool done;
-//    do {
-//       done = true;
-//        std::set<long> disabledNodes;
-//        for (int i=0; i< nodes.size(); i++) {
-//            Node &n = nodes[i];
-//            // if our indegree is 0, disable our inputs
-//            if (inputNodes.count(i) == 0 && n.indegree == 0 && n.outdegree > 0) {
-//                disabledNodes.insert(i);
-//            }
-//        }
-//        if (!done) {
-//            for (std::vector<Edge>::iterator it = edges.begin(); it != edges.end(); it++) {
-//                if (disabledNodes.count(it->nodeFrom) > 0) {
-//                    if (!it->disabled) {
-//                       done=false;
-//                        it->disabled = true;
-//                       nodes[it->nodeTo].indegree--;
-//                        nodes[it->nodeFrom].outdegree--;
-//                    }
-//                }
-//            }
-//        }
-//    }  while (!done);
-//}
+public:
+    Path(){}
+    Path(long startNode) { nodes.push_back(startNode); }
+    
+    long totalDelay = 0;
+    
+    void extend(long next) {
+        nodes.push_back(next);
+    }
+    
+    bool containsNode(long n) const {
+        return (std::find(nodes.begin(), nodes.end(), n) != nodes.end());
+    }
+    
+    bool endsOnNode(long n)  const {
+        return !nodes.empty() && nodes.back() == n;
+    }
+    
+    bool containsEdge(long from, long to) {
+        std::vector<long>::iterator fromPos = std::find(nodes.begin(), nodes.end(), from);
+        std::vector<long>::iterator toPos = std::find(nodes.begin(), nodes.end(), to);
+        
+        if (fromPos != nodes.end() && toPos != nodes.end()) {
+            return (toPos - fromPos == 1);
+        }
+            
+        return false;
+    }
+    
+    
+};
+
+
+
+void RecurrentNN::fixCycles(DelayEdge &e)
+{
+   // collect all paths - if one turns out to be a cycle, put a delay on the last edge we encountered
+    std::vector<Path> paths;
+    std::deque<DelayEdge> stack;
+
+    std::vector<DelayEdge> amendedEdges = std::vector<DelayEdge>(edges);
+    
+    
+    for (std::set<long>::iterator inputIt = inputNodes.begin(); inputIt != inputNodes.end(); inputIt++) {
+        paths.push_back(Path(*inputIt));
+        
+        DelayEdge e = DelayEdge(-1, *inputIt);
+        stack.push_back(e);
+        amendedEdges.push_back(e);
+    }
+    
+    while (stack.size() > 0) {
+        DelayEdge current = stack.front();
+        stack.pop_front();
+
+        long from = current.nodeTo;
+        std::vector<DelayEdge> outgoing = outputsFromNode(from);
+        
+        // find the paths that ended on this node, so we can extend them
+        std::vector<Path>::iterator it = paths.begin();
+        std::vector<Path> newPaths;
+        std::vector<std::pair<long,long> > delayedEdges;
+        
+            do {
+               // bool created_cycle = false;
+                it = std::find_if(it, paths.end(), [from](const Path &p){return p.endsOnNode(from);});
+                
+                if (it != paths.end()) {
+                    for (std::vector<DelayEdge>::iterator outIt = outgoing.begin(); outIt != outgoing.end(); outIt++) {
+                        // spawn new paths that fork out here, then get rid of the original
+                        // EXPONENTIAL SPACE - WOOOOOOO
+                        if (!it->containsNode(outIt->nodeTo)) {
+                            // not making a cycle
+                            Path newPath = Path(*it);
+                            newPath.extend(outIt->nodeTo);
+                            newPath.totalDelay = it->totalDelay + outIt->delay;
+                            newPaths.push_back(newPath);
+                            stack.push_back(*outIt);
+                        } else {
+                            // if the delay is 0, there is a PROBLEM
+                            // we need to put a delay in this path
+                            if (it->totalDelay == 0) {
+                                std::vector<DelayEdge>::iterator realEdge = std::find(edges.begin(), edges.begin(), *outIt);
+                                realEdge->delay = 1;
+                                delayedEdges.push_back(std::pair<long, long>(realEdge->nodeFrom, realEdge->nodeTo));
+                                 it->totalDelay = 1;
+                            }
+                            
+                            // either way, no need to extend this path... right?
+                            // definitely no need to put this edge on the stack
+                            
+                        }
+                    }
+                    it = paths.erase(it); // get rid of this path - it either has descendants or it ended.
+                }
+            } while (it!=paths.end());
+       
+        // update paths containing delayed edges
+        if (!delayedEdges.empty()) {
+            for (long i=0; i<paths.size(); i++) {
+                for (int j=0; j<delayedEdges.size(); j++) {
+                    if (paths[i].containsEdge(delayedEdges[j].first, delayedEdges[j].second)) {
+                        paths[i].totalDelay +=1;
+                    }
+                }
+            }
+        }
+        
+        paths.insert(paths.end(), newPaths.begin(), newPaths.end());
+    }
+    
+    
+}

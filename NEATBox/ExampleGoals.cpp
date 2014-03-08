@@ -416,7 +416,7 @@ double isAllEven(MNIndividual *i)
             std::vector<double> next = bin_rep4(n);
             seqInputs.push_back(next);
         }
-        std::vector<std::vector<double> >seqOutputs = individual->simulateSequence(seqInputs, 1);
+        std::vector<std::vector<double> >seqOutputs = individual->simulateSequence(seqInputs);
         for (int j=0; j<seqOutputs.size(); j++) {
             double retVal = seqOutputs[j].front();
             double d = (retVal - expectedOutputs[j]);

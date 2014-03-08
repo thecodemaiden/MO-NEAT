@@ -20,7 +20,7 @@
 struct DelayEdge : Edge {
     int delay;
 
-    DelayEdge(int nodeFrom, int nodeTo):Edge(nodeFrom, nodeTo), delay(0){};
+    DelayEdge(long nodeFrom, long nodeTo):Edge(nodeFrom, nodeTo), delay(0){};
     
     virtual DelayEdge *clone() const {return new DelayEdge(*this);}
 };
@@ -48,7 +48,7 @@ public:
 
     RecurrentNN(int nInputs, int nOutputs);
     
-    virtual void addGeneFromParentSystem(MNIndividual *parent, MNEdge *gene);
+    virtual void addGeneFromParentSystem(MNIndividual *parent, MNEdge *gene); // every time we add an edge, we check for cycles
     virtual std::vector<MNEdge *> connectionGenome();
     
     virtual double nodeDifference(MNIndividual *other);
@@ -56,7 +56,7 @@ public:
     virtual void mutateConnectionWeights(double p_m);
    virtual  void mutateNodes(double p_m);
    virtual  std::vector<MNEdge *> createNode();
-   virtual  DelayEdge *createConnection();
+   virtual  DelayEdge *createConnection(); // every time we add an edge, we check for cycles
     
    virtual  double connectionDifference(MNEdge *e1, MNEdge *e2);
     
@@ -66,7 +66,7 @@ public:
 #pragma mark - End of necessary methods
     
     // we generate recurrent networks that may wish to simulate a sequence
-    std::vector<std::vector<double> > simulateSequence(const std::vector<std::vector<double> > &inputValues, int delay);
+    std::vector<std::vector<double> > simulateSequence(const std::vector<std::vector<double> > &inputValues);
     
     std::string display();
     std::string dotFormat(std::string graphName="RecurrentNN");
@@ -81,20 +81,26 @@ private:
     std::set<long> inputNodes;
     std::set<long> outputNodes;
     
+    long maxDelay; // the longest delay of any edge
     
+    // -- NOT USED BUT LEAVING THIS FOR NOW
     std::vector<std::vector<long> > cycleSort(); // use Tarjan's algorithm to find cycles, enforce delays in cycles
     struct CycleNode; // helper struct for cycleSort
     // recursive helper function
     void strongConnect(long v, long index, std::vector<long> &stack,
                                     std::vector<RecurrentNN::CycleNode> &nodes,  std::vector<std::vector<long> > &components);
+    // -- END --
 
+    void fixCycles(DelayEdge &newEdge); // can't have cycles with no delayed edges
 
     // helpers for simulation
-    std::vector<double> nodeOutputsForInputs(std::vector<double> inputs, std::vector<double> lastOutputs, std::vector<std::vector<double> > &memory);
+    std::vector<double> nodeOutputsForInputs(std::vector<double> inputs, std::vector<std::vector<double> > &memory);
+
     std::vector<DelayEdge> inputsToNode(long n);
     std::vector<DelayEdge> outputsFromNode(long n);
-    double visitNode(long i, std::set<long> &visitedNodes, std::vector<double> &lastOutputs);
-
+    
+    std::vector<DelayEdge> inputsToNode(long n, std::vector<DelayEdge> edgeSet);
+    std::vector<DelayEdge> outputsFromNode(long n, std::vector<DelayEdge> edgeSet);
 
 };
 
