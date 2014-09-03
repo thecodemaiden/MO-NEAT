@@ -32,12 +32,17 @@ struct RecurrentNode : Node {
     RecurrentNode():Node(), minDepth(0), maxDepth(0){};
 };
 
+/* TODO:
+ To fix cycles, we start at the end and go to the source. We stop when we encounter a node we've already seen, and look at the cumulative delay to
+ get there. If the cumulative delay is 0, there is a cycle, and we must add delay along that path.
+ */
+
 // the internal representation of your graph is up to you
 // this is a weighted directed graph, the standard model of a NN
 class RecurrentNN : public virtual MNIndividual, public CycledNN
 {
 protected:
-    std::vector<Node> nodes;
+    std::vector<RecurrentNode> nodes;
     std::vector<DelayEdge> edges;
     
     virtual std::vector<MNEdge *> insertNodeOnEdge(long pos);

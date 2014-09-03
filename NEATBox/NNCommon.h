@@ -16,12 +16,10 @@
 #include "assert.h"
 
 enum ActivationFunc {
-
-    SIN_FUNC,
-
-  FUNC_SENTINEL,
     GAUSSIAN_FUNC,
     TANH_FUNC,
+    FUNC_SENTINEL,
+    SIN_FUNC,
     STEP_FUNC,
     LIN_FUNC,
 };

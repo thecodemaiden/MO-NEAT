@@ -430,6 +430,16 @@ double isAllEven(MNIndividual *i)
     return diff;
 }
 
+double hasFewNodes(MNIndividual *individual)
+{
+    return  individual->numberOfNodes();
+}
+
+double hasFewEdges(MNIndividual *individual)
+{
+    return sqrt(individual->numberOfEdges());
+}
+
 double trainAllEven(BasicNN * individual)
 {
 //TBD

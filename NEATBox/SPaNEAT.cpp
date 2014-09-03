@@ -17,7 +17,7 @@
 
 #include "NBUtils.h"
 
-#define SEPARATE_ARCHIVE 1
+#define SEPARATE_ARCHIVE 0
 
 SPaNEAT::SPaNEAT(long populationSize, long archiveSize)
 :BaseNEAT(populationSize),
@@ -249,8 +249,10 @@ void SPaNEAT::tick()
             lastArchived = sysIter;
         }
     }
-    if (verbose)
+    
+    if (verbose) {
         std::cout << newArchive.size() << " non dominated solutions (" << generations << ").\n";
+    }
 
     
     long archiveExcess = newArchive.size() - archiveSize;

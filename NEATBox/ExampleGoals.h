@@ -28,6 +28,10 @@ double trainMult3(MNIndividual *individual);
 double testMult2(BasicNN *individual);
 double testMult3(BasicNN *individual);
 
+// for when we want to limt complexity
+double hasFewNodes(MNIndividual *individual);
+double hasFewEdges(MNIndividual *individual);
+
 // --- Sequence test ---
 
 // have all inputs so far been even numbers?

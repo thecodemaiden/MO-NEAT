@@ -25,16 +25,17 @@ int main(int argc, const char * argv[])
 //    std::cout << "--- SPEA2 ---\n";
 //    
 //    for (int i=0; i<5; i++) {
-//        SPaNEAT *s = new SPaNEAT(100,100, 25);
+//        SPaNEAT *s = new SPaNEAT(100, 25);
 //        s->verbose = true;
 //        runMult23MOTestTrain(s);
 //        delete s;
 //        
 //    }
     
-    MONEAT *m = new MONEAT(50);
+    SPaNEAT *m = new SPaNEAT(200, 15);
+ //   MONEAT *m = new MONEAT(100);
     m->verbose = true;
-    runSequenceTest(m);
+    runSequenceTest(m, 300);
     delete m;
     
     return 0;

@@ -256,8 +256,8 @@ Edge *BasicNN::createConnection()
         bool acceptable = false;
         do {
             do{
-                source = possibleSources[arc4random_uniform(possibleSources.size())];
-                sink = possibleSinks[arc4random_uniform(possibleSinks.size())];
+                source = possibleSources[uniformlyDistributed(possibleSources.size())];
+                sink = possibleSinks[uniformlyDistributed(possibleSinks.size())];
             }while (sink == source) ;
             
             long sourceRank = topoRank(currentTopo, source);

@@ -147,6 +147,7 @@ void runSequenceTest(BaseNEAT *algo, long maxGenerations)
 {
     algo->createInitialIndividual = &createAllEvenNetwork;
     algo->evaluationFunctions.push_back(&isAllEven);
+    algo->evaluationFunctions.push_back(&hasFewEdges);
     
     algo->w_disjoint = 4.0;
     algo->w_excess = 4.0;
@@ -161,11 +162,19 @@ void runSequenceTest(BaseNEAT *algo, long maxGenerations)
     std::vector<SystemInfo *>winners = algo->optimalSolutions();
     assert(winners.size() > 0);
     
-    RecurrentNN *winner = dynamic_cast<RecurrentNN *>(algo->optimalSolutions()[0]->individual);
-    //
-    std::cout << winner->dotFormat();
-    std::cout << "Final score: " << isAllEven(winner) <<"\n";
-
     
+    // show all winners
+    for (SystemInfo * i : winners) {
+        RecurrentNN *winner = dynamic_cast<RecurrentNN *>(i->individual);
+        std::cout << winner->dotFormat();
+        std::cout << "Score: " << isAllEven(winner) << std::endl;
+    }
+    
+//    RecurrentNN *winner = dynamic_cast<RecurrentNN *>(algo->optimalSolutions()[0]->individual);
+//    
+//    std::cout << winner->dotFormat();
+//    std::cout << "Final score: " << isAllEven(winner) <<"\n";
+//
+//    
 }
 

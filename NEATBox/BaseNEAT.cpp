@@ -17,6 +17,7 @@ generations(0), origin(NULL)
 {
 }
 
+
 std::vector<SystemInfo *> BaseNEAT::optimalSolutions()
 {
     return bestIndividuals;

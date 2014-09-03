@@ -86,11 +86,11 @@ static bool compareIndividuals(SystemInfo *sys1, SystemInfo *sys2)
 {
     return sys1->rankFitness < sys2->rankFitness;
 }
-
-static bool distanceCompare(const std::pair<NEATExtendedSpecies *, double> &p1, const std::pair<NEATExtendedSpecies*, double> &p2)
-{
-    return p1.second < p2.second;
-}
+//
+//static bool distanceCompare(const std::pair<NEATExtendedSpecies *, double> &p1, const std::pair<NEATExtendedSpecies*, double> &p2)
+//{
+//    return p1.second < p2.second;
+//}
 
 #if RESTRICT_SPECIES
 void MONEAT::spawnNextGeneration()
@@ -363,7 +363,7 @@ void MONEAT::updateSharedFitnesses()
 {
     long nSpecies = speciesList.size();
     if (verbose)
-        std::cout << nSpecies << " species \n";
+        std::cout << nSpecies << " species (" << generations <<") \n";
     
     // for each species, copy a random current member to be the representative for the next generation, and adjust the fitnesses for sharing
     // kill off a species with no members
@@ -554,7 +554,6 @@ void MONEAT::rankSystems()
 
 void MONEAT::tick()
 {
-    bool first_run = false;
     if (population.size() == 0) {
         prepareInitialPopulation();
     } else {
