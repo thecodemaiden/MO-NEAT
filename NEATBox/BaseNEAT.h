@@ -51,7 +51,6 @@ protected:
     
 public:
     BaseNEAT(long populationSize);
-    BaseNEAT(std::vector<SystemInfo *> startPopulation);
     virtual ~BaseNEAT(){};
     
     virtual void tick() = 0;

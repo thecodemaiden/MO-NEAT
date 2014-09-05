@@ -489,6 +489,7 @@ static int domination(SystemInfo *s1, SystemInfo *s2)
     return 0;
 }
 
+// using NSGA-II
 void MONEAT::rankSystems()
 {
     std::vector<SystemInfo *>::iterator popIter;

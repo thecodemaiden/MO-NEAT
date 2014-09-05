@@ -32,10 +32,14 @@ int main(int argc, const char * argv[])
 //        
 //    }
     
-    SPaNEAT *m = new SPaNEAT(200, 15);
- //   MONEAT *m = new MONEAT(100);
+//   SPaNEAT *m = new SPaNEAT(100, 25);
+//   m->verbose = true;
+//    runSequenceTest(m, 400);
+
+    MONEAT *m = new MONEAT(150);
     m->verbose = true;
     runSequenceTest(m, 300);
+
     delete m;
     
     return 0;

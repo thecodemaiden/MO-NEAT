@@ -427,7 +427,7 @@ double isAllEven(MNIndividual *i)
         }
     }
     
-    return diff;
+    return diff*diff;
 }
 
 double hasFewNodes(MNIndividual *individual)

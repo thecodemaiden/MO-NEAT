@@ -115,9 +115,8 @@ void SPaNEAT::prepareInitialPopulation()
     }
 }
 
-// does s1 dominate s2?
-// i.e. all s1 fitness values are greater than s2?
-static int domination(SPSystemInfo *s1, SPSystemInfo *s2)
+
+static int domination(SystemInfo *s1, SystemInfo *s2)
 {
     bool firstDominates = true;
     bool secondDominates = true;
@@ -125,7 +124,15 @@ static int domination(SPSystemInfo *s1, SPSystemInfo *s2)
     std::vector<double>::iterator fitnessIter1 = s1->fitnesses.begin();
     std::vector<double>::iterator fitnessIter2 = s2->fitnesses.begin();
     
+#if FINE_RANK
+    double fitnessSum1 = 0.0;
+    double fitnessSum2 = 0.0;
+#endif
     while (fitnessIter1 != s1->fitnesses.end()) {
+#if FINE_RANK
+        fitnessSum1 += *fitnessIter1;
+        fitnessSum2 += *fitnessIter2;
+#endif
         if (*fitnessIter1 > *fitnessIter2)
             firstDominates = false;
         
@@ -135,8 +142,15 @@ static int domination(SPSystemInfo *s1, SPSystemInfo *s2)
         fitnessIter1++;
     }
     
-    if (firstDominates == secondDominates)
+    if (firstDominates == secondDominates) {
+#if FINE_RANK
+        if (fitnessSum1 < fitnessSum2)
+            return 1;
+        if (fitnessSum2 < fitnessSum1)
+            return -1;
+#endif
         return 0;
+    }
     
     if (firstDominates)
         return 1;
@@ -146,6 +160,39 @@ static int domination(SPSystemInfo *s1, SPSystemInfo *s2)
     
     return 0;
 }
+
+
+// does s1 dominate s2?
+// i.e. all s1 fitness values are greater than s2?
+//static int domination(SPSystemInfo *s1, SPSystemInfo *s2)
+//{
+//    bool firstDominates = true;
+//    bool secondDominates = true;
+//    
+//    std::vector<double>::iterator fitnessIter1 = s1->fitnesses.begin();
+//    std::vector<double>::iterator fitnessIter2 = s2->fitnesses.begin();
+//    
+//    while (fitnessIter1 != s1->fitnesses.end()) {
+//        if (*fitnessIter1 > *fitnessIter2)
+//            firstDominates = false;
+//        
+//        if (*fitnessIter2 > *fitnessIter1)
+//            secondDominates = false;
+//        fitnessIter2++;
+//        fitnessIter1++;
+//    }
+//    
+//    if (firstDominates == secondDominates)
+//        return 0;
+//    
+//    if (firstDominates)
+//        return 1;
+//    
+//    if (secondDominates)
+//        return -1;
+//    
+//    return 0;
+//}
 
 // using SPEA2
 void SPaNEAT::rankSystems()
@@ -197,8 +244,6 @@ void SPaNEAT::rankSystems()
         sys->rankFitness = 1.0/(kDist + 2);
     }
     
-    
-    // now add the strengths of dominators to population neighborhood density
     for (popIter = toRank.begin(); popIter != toRank.end(); popIter++) {
         SPSystemInfo *sys = *popIter;
         std::vector<SPSystemInfo *> dominators = dominationMap[sys];
